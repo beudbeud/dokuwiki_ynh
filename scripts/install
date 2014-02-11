@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Retrieve arguments
+domain=$1
+path=$2
+is_public=$3
+
+# Check domain/path availability
+sudo yunohost app checkurl $domain$path -a dokuwiki
+if [[ ! $? -eq 0 ]]; then
+    exit 1
+fi
+
+# Copy files to the right place
+final_path=/var/www/dokuwiki
+sudo mkdir -p $final_path
+sudo cp -a ../sources/* $final_path
+
+# Files owned by root, www-data can just read
+sudo find $final_path -type f | xargs sudo chmod 644
+sudo find $final_path -type d | xargs sudo chmod 755
+sudo chown -R root: $final_path
+
+# except for data, data/tmp and lib/plugin, where www-data must have write permissions
+sudo chown www-data:root $final_path/{data,data/tmp,lib/plugins/}
+sudo chmod 700 $final_path/{data,data/tmp,lib/plugins/}
+
+
+# Modify Nginx configuration file and copy it to Nginx conf directory
+sed -i "s@YNH_WWW_PATH@$path@g" ../conf/nginx.conf
+sed -i "s@YNH_WWW_ALIAS@$final_path/@g" ../conf/nginx.conf
+sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/dokuwiki.conf
+
+if [ $is_public = "Yes" ];
+then
+  sudo yunohost app setting dokuwiki skipped_uris -v "/" 
+fi
+
+sudo service nginx reload
+sudo yunohost app ssowatconf

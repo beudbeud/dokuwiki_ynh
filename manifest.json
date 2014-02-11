@@ -1,0 +1,38 @@
+{
+    "name": "Dokuwiki",
+    "id": "dokuwiki",
+    "description": {
+        "en": "DokuWiki is a simple to use and highly versatile Open Source wiki software that doesn't require a database"
+    },
+    "developer": {
+        "name": "loklin"
+    },
+    "multi_instance": "false",
+    "arguments": {
+        "install" : [
+            {
+                "name": "domain",
+                "ask": {
+                    "en": "Choose a domain for DokuWiki"
+                },
+                "example": "domain.org"
+            },
+            {
+                "name": "path",
+                "ask": {
+                    "en": "Choose a path for DokuWiki"
+                },
+                "example": "/DokuWiki",
+                "default": "/DokuWiki"
+            },
+            {
+                "name": "is_public",
+                "ask": {
+                    "en": "Is it a public DokuWiki site ?"
+                },
+                "choices": ["Yes", "No"],
+                "default": "Yes"
+            }
+        ]
+    }
+}
