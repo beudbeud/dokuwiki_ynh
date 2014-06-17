@@ -19,14 +19,16 @@
             {
                 "name": "domain",
                 "ask": {
-                    "en": "Choose a domain for DokuWiki"
+                    "en": "Choose a domain for DokuWiki",
+                    "fr": "Choisissez un domaine pour DokuWiki"
                 },
                 "example": "domain.org"
             },
             {
                 "name": "path",
                 "ask": {
-                    "en": "Choose a path for DokuWiki"
+                    "en": "Choose a path for DokuWiki",
+                    "fr": "Choisissez un chemin pour DokuWiki"
                 },
                 "example": "/dokuwiki",
                 "default": "/dokuwiki"
@@ -34,7 +36,8 @@
             {
                 "name": "is_public",
                 "ask": {
-                    "en": "Is it a public DokuWiki site ?"
+                    "en": "Is it a public DokuWiki site ?",
+                    "fr": "Est-ce un site public ?"
                 },
                 "choices": ["Yes", "No"],
                 "default": "Yes"
