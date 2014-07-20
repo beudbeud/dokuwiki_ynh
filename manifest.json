@@ -34,6 +34,14 @@
                 "default": "/dokuwiki"
             },
             {
+                "name": "admin",
+                "ask": {
+                    "en": "Choose an admin user",
+                    "fr": "Choisissez l'administrateur"
+                },
+                "example": "johndoe"
+            },
+            {
                 "name": "is_public",
                 "ask": {
                     "en": "Is it a public DokuWiki site ?",
