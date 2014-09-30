@@ -8,6 +8,7 @@
         "es": "DokuWiki es un sistema de Wiki de uso sencillicimo y compatible con los estándares.",
         "it": "DokuWiki è un Wiki aderente agli standard, semplice da usare, finalizzato principalmente alla creazione di documentazione di qualsiasi tipo."
     },
+    "licence": "GPL-2",
     "developer": {
         "name": "opi",
         "email": "opi@no-log.org",
