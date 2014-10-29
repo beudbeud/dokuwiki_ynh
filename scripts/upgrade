@@ -41,7 +41,8 @@ sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/dokuwiki.conf
 
 if [ "$is_public" = "Yes" ];
 then
-  sudo yunohost app setting dokuwiki skipped_uris -v "/" 
+  sudo yunohost app setting dokuwiki skipped_uris -d
+  sudo yunohost app setting dokuwiki unprotected_uris -v "/"
 fi
 
 sudo service nginx reload
