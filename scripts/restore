@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# The parameter $1 is the uncompressed restore directory location
+backup_dir=$1/apps/dokuwiki
+
+# Restore sources & data
+sudo cp -a $backup_dir/sources/. /var/www/dokuwiki
+
+# Copy Nginx and YunoHost parameters to make the script "standalone"
+sudo cp -a $backup_dir/yunohost/. /etc/yunohost/apps/dokuwiki
+domain=$(sudo yunohost app setting dokuwiki domain)
+sudo cp -a $backup_dir/nginx.conf /etc/nginx/conf.d/$domain.d/dokuwiki.conf
+
+sudo service nginx restart
