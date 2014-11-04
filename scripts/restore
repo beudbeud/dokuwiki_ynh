@@ -11,4 +11,4 @@ sudo cp -a $backup_dir/yunohost/. /etc/yunohost/apps/dokuwiki
 domain=$(sudo yunohost app setting dokuwiki domain)
 sudo cp -a $backup_dir/nginx.conf /etc/nginx/conf.d/$domain.d/dokuwiki.conf
 
-sudo service nginx restart
+sudo service nginx reload
