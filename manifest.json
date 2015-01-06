@@ -8,16 +8,17 @@
         "es": "DokuWiki es un sistema de Wiki de uso sencillicimo y compatible con los estándares.",
         "it": "DokuWiki è un Wiki aderente agli standard, semplice da usare, finalizzato principalmente alla creazione di documentazione di qualsiasi tipo."
     },
-    "developer": {
+    "url": "http://zeropi.net",
+    "maintainer": {
         "name": "opi",
-        "email": "opi@no-log.org",
-        "url": "http://zeropi.net"
+        "email": "opi@no-log.org"
     },
     "multi_instance": "false",
     "arguments": {
         "install" : [
             {
                 "name": "domain",
+                "type": "domain",
                 "ask": {
                     "en": "Choose a domain for DokuWiki",
                     "fr": "Choisissez un domaine pour DokuWiki"
@@ -26,6 +27,7 @@
             },
             {
                 "name": "path",
+                "type": "path",
                 "ask": {
                     "en": "Choose a path for DokuWiki",
                     "fr": "Choisissez un chemin pour DokuWiki"
@@ -35,6 +37,7 @@
             },
             {
                 "name": "admin",
+                "type": "user",
                 "ask": {
                     "en": "Choose an admin user",
                     "fr": "Choisissez l'administrateur"
