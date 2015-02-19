@@ -11,7 +11,7 @@
     "url": "https://www.dokuwiki.org",
     "maintainer": {
         "name": "opi",
-        "email": "opi@no-log.org"
+        "email": "opi@zeropi.net"
     },
     "multi_instance": "false",
     "arguments": {
