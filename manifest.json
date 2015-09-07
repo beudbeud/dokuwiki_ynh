@@ -13,7 +13,7 @@
         "name": "opi",
         "email": "opi@zeropi.net"
     },
-    "multi_instance": "false",
+    "multi_instance": "true",
     "arguments": {
         "install" : [
             {
