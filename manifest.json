@@ -14,6 +14,10 @@
         "email": "opi@zeropi.net"
     },
     "multi_instance": "false",
+    "services": [
+        "nginx",
+        "php5-fpm",
+    ],
     "arguments": {
         "install" : [
             {
