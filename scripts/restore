@@ -1,14 +1,55 @@
 #!/bin/bash
+# This restore script is adapted to Yunohost >=2.4
 
-# The parameter $1 is the uncompressed restore directory location
-backup_dir=$1/apps/dokuwiki
+# The parameter $1 is the backup directory location dedicated to the app
+backup_dir=$1
+
+# The parameter $2 is the id of the app instance ex: ynhexample__2
+app=$2
+
+# Get old parameter of the app
+domain=$(sudo yunohost app setting $app domain)
+path=$(sudo yunohost app setting $app path)
+user=$(sudo yunohost app setting $app allowed_users)
+is_public=$(sudo yunohost app setting $app is_public)
+
+# Check domain/path availability
+sudo yunohost app checkurl $domain$path -a $app
+if [[ ! $? -eq 0 ]]; then
+    echo "There is already an app on this URL : $domain$path" | sudo tee /dev/stderr
+    exit 1
+fi
+
+final_path=/var/www/$app
+if [ -d $final_path ]; then
+    echo "There is already a directory: $final_path " | sudo tee /dev/stderr
+    exit 1
+fi
+
+conf=/etc/nginx/conf.d/$domain.d/$app.conf
+if [ -f $conf ]; then
+    echo "There is already a nginx conf file at this path: $conf " | sudo tee /dev/stderr
+    exit 1
+fi
 
 # Restore sources & data
-sudo cp -a $backup_dir/sources/. /var/www/dokuwiki
+sudo cp -a "${backup_dir}/sources" $final_path
 
-# Copy Nginx and YunoHost parameters to make the script "standalone"
-sudo cp -a $backup_dir/yunohost/. /etc/yunohost/apps/dokuwiki
-domain=$(sudo yunohost app setting dokuwiki domain)
-sudo cp -a $backup_dir/nginx.conf /etc/nginx/conf.d/$domain.d/dokuwiki.conf
+# Set permissions
+sudo chown -R www-data:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins}
+sudo chmod -R 700 $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins}
+
+# Restore conf files
+sudo cp -a "${backup_dir}/nginx.conf" $conf
+
+# Reload Nginx
+sudo service nginx reload
+
+# Set ssowat config
+if [ "$is_public" = "Yes" ];
+then
+  sudo yunohost app setting dokuwiki unprotected_uris -v "/"
+fi
 
 sudo service nginx reload
+sudo yunohost app ssowatconf
