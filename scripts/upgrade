@@ -25,6 +25,10 @@ sudo cp -a ../sources/* $final_path
 sudo cp ../conf/$APP.php $final_path/conf
 sudo cp ../conf/acl.auth.php $final_path/conf
 
+# Remove upgrade notification
+# See https://www.dokuwiki.org/update_check
+sudo touch $final_path/doku.php
+
 # Files owned by root, www-data can just read
 sudo find $final_path -type f | xargs sudo chmod 0644
 sudo find $final_path -type d | xargs sudo chmod 755
