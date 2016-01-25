@@ -3,10 +3,11 @@
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Andreas Gohr <andi@splitbrain.org>
  */
+
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC.'lib/plugins/');
-require_once(DOKU_INC.'inc/blowfish.php');
+
 
 class helper_plugin_captcha extends DokuWiki_Plugin {
 
@@ -106,8 +107,15 @@ class helper_plugin_captcha extends DokuWiki_Plugin {
      * @return bool true when the answer was correct, otherwise false
      */
     public function check($msg = true) {
-        // compare provided string with decrypted captcha
-        $rand = $this->decrypt($_REQUEST[$this->field_sec]);
+        global $INPUT;
+
+        $code = '';
+        $field_sec = $INPUT->str($this->field_sec);
+        $field_in  = $INPUT->str($this->field_in);
+        $field_hp  = $INPUT->str($this->field_hp);
+
+        // reconstruct captcha from provided $field_sec
+        $rand = $this->decrypt($field_sec);
 
         if($this->getConf('mode') == 'math') {
             $code = $this->_generateMATH($this->_fixedIdent(), $rand);
@@ -118,10 +126,12 @@ class helper_plugin_captcha extends DokuWiki_Plugin {
             $code = $this->_generateCAPTCHA($this->_fixedIdent(), $rand);
         }
 
-        if(!$_REQUEST[$this->field_sec] ||
-            !$_REQUEST[$this->field_in] ||
-            utf8_strtolower($_REQUEST[$this->field_in]) != utf8_strtolower($code) ||
-            trim($_REQUEST[$this->field_hp]) !== ''
+        // compare values
+        if(!$field_sec ||
+            !$field_in ||
+            $rand === false ||
+            utf8_strtolower($field_in) != utf8_strtolower($code) ||
+            trim($field_hp) !== ''
         ) {
             if($msg) msg($this->getLang('testfailed'), -1);
             return false;
@@ -198,6 +208,19 @@ class helper_plugin_captcha extends DokuWiki_Plugin {
     }
 
     /**
+     * Generate some numbers from a known string and random number
+     *
+     * @param $fixed string the fixed part, any string
+     * @param $rand  float  some random number between 0 and 1
+     * @return string
+     */
+    protected function _generateNumbers($fixed, $rand) {
+        $fixed   = hexdec(substr(md5($fixed), 5, 5)); // use part of the md5 to generate an int
+        $rand = $rand * 0xFFFFF; // bitmask from the random number
+        return md5($rand ^ $fixed); // combine both values
+    }
+
+    /**
      * Generates a random char string
      *
      * @param $fixed string the fixed part, any string
@@ -205,12 +228,13 @@ class helper_plugin_captcha extends DokuWiki_Plugin {
      * @return string
      */
     public function _generateCAPTCHA($fixed, $rand) {
-        $fixed   = hexdec(substr(md5($fixed), 5, 5)); // use part of the md5 to generate an int
-        $numbers = md5($rand * $fixed); // combine both values
+        $numbers = $this->_generateNumbers($fixed, $rand);
 
         // now create the letters
         $code = '';
-        for($i = 0; $i < ($this->getConf('lettercount') * 2); $i += 2) {
+        $lettercount = $this->getConf('lettercount') * 2;
+        if($lettercount > strlen($numbers)) $lettercount = strlen($numbers);
+        for($i = 0; $i < $lettercount; $i += 2) {
             $code .= chr(floor(hexdec($numbers[$i].$numbers[$i + 1]) / 10) + 65);
         }
 
@@ -225,8 +249,7 @@ class helper_plugin_captcha extends DokuWiki_Plugin {
      * @return array taks, result
      */
     protected function _generateMATH($fixed, $rand) {
-        $fixed   = hexdec(substr(md5($fixed), 5, 5)); // use part of the md5 to generate an int
-        $numbers = md5($rand * $fixed); // combine both values
+        $numbers = $this->_generateNumbers($fixed, $rand);
 
         // first letter is the operator (+/-)
         $op  = (hexdec($numbers[0]) > 8) ? -1 : 1;
@@ -308,6 +331,7 @@ class helper_plugin_captcha extends DokuWiki_Plugin {
      */
     public function decrypt($data) {
         $data = base64_decode($data);
+        if($data === false || $data === '') return false;
 
         if(function_exists('auth_decrypt')) {
             return auth_decrypt($data, auth_cookiesalt()); // since binky

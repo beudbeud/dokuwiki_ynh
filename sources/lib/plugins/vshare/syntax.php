@@ -44,7 +44,7 @@ class syntax_plugin_vshare extends DokuWiki_Syntax_Plugin {
     /**
      * Parse the parameters
      */
-    function handle($match, $state, $pos, &$handler){
+    function handle($match, $state, $pos, Doku_Handler $handler){
         $command = substr($match,2,-2);
 
         // title
@@ -78,12 +78,52 @@ class syntax_plugin_vshare extends DokuWiki_Syntax_Plugin {
             $height = 350;
         }
 
+        $paramm = array();
+        parse_str($param, $paramm);
+        $urlparam = array();
+        foreach($paramm as $key => $value) {
+            switch($key) {
+                case 'rel':
+                case 'autoplay':
+                case 'ap':
+                    if($paramm[$key] === '1' || $paramm[$key] === '0') {
+                        $urlparam[] = $key . '=' . $paramm[$key];
+                    }
+                    break;
+                case 'start':
+                case 'end':
+                case 'chapter_id': //for twitch.tv
+                case 'initial_time':
+                case 'offsetTime':
+                case 'startSlide':
+                    $number = (int) $paramm[$key];
+                    if($number > 0) {
+                        $urlparam[] = $key . '=' . $number;
+                    }
+                    break;
+                case 'auto_start':
+                    if($paramm[$key] === 'true' || $paramm[$key] === 'false') {
+                        $urlparam[] = $key . '=' . $paramm[$key];
+                    }
+                    break;
+            }
+        }
+
         list($type, $url) = explode(' ', $this->sites[$site], 2);
         $url  = trim($url);
         $type = trim($type);
         $url  = str_replace('@VIDEO@',rawurlencode($vid),$url);
         $url  = str_replace('@WIDTH@',$width,$url);
         $url  = str_replace('@HEIGHT@',$height,$url);
+        if(count($urlparam)) {
+            if(strpos($url, '?') !== false) {
+                $sepchar = '&';
+            } else {
+                $sepchar = '?';
+            }
+            $url .= $sepchar . implode('&', $urlparam);
+        }
+
         list(,$vars) = explode('?',$url,2);
         $varr = array();
         parse_str($vars,$varr);
@@ -104,7 +144,7 @@ class syntax_plugin_vshare extends DokuWiki_Syntax_Plugin {
     /**
      * Render the flash player
      */
-    function render($mode, &$R, $data){
+    function render($mode, Doku_Renderer $R, $data){
         if($mode != 'xhtml') return false;
         if(is_null($data)) return false;
 
@@ -132,6 +172,13 @@ class syntax_plugin_vshare extends DokuWiki_Syntax_Plugin {
 
             $R->doc .= '</div>';
         }else{
+            // use redirector for HTTP embeds on SSL sites
+            if(is_ssl() && substr($data['url'], 0, 7) == 'http://') {
+                $data['url'] = DOKU_BASE.'lib/plugins/vshare/redir.php'.
+                               '?url='.rawurlencode($data['url']).
+                               '&hash='.md5(auth_cookiesalt().'vshare'.$data['url']);
+            }
+
             // Normal output
             if($data['type'] == 'flash') {
                 // embed flash

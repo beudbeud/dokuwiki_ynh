@@ -8,74 +8,157 @@
 
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
-
-if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC.'lib/plugins/');
-require_once(DOKU_PLUGIN.'action.php');
+if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 
 class action_plugin_captcha extends DokuWiki_Action_Plugin {
 
     /**
      * register the eventhandlers
      */
-    function register(&$controller) {
+    public function register(Doku_Event_Handler $controller) {
+        // check CAPTCHA success
         $controller->register_hook(
             'ACTION_ACT_PREPROCESS',
             'BEFORE',
             $this,
-            'handle_act_preprocess',
+            'handle_captcha_input',
             array()
         );
 
-        // old hook
-        $controller->register_hook(
-            'HTML_EDITFORM_INJECTION',
-            'BEFORE',
-            $this,
-            'handle_editform_output',
-            array('editform' => true, 'oldhook' => true)
-        );
-
-        // new hook
+        // inject in edit form
         $controller->register_hook(
             'HTML_EDITFORM_OUTPUT',
             'BEFORE',
             $this,
-            'handle_editform_output',
-            array('editform' => true, 'oldhook' => false)
+            'handle_form_output',
+            array()
         );
 
-        if($this->getConf('regprotect')) {
-            // old hook
-            $controller->register_hook(
-                'HTML_REGISTERFORM_INJECTION',
-                'BEFORE',
-                $this,
-                'handle_editform_output',
-                array('editform' => false, 'oldhook' => true)
-            );
+        // inject in user registration
+        $controller->register_hook(
+            'HTML_REGISTERFORM_OUTPUT',
+            'BEFORE',
+            $this,
+            'handle_form_output',
+            array()
+        );
 
-            // new hook
+        // inject in password reset
+        $controller->register_hook(
+            'HTML_RESENDPWDFORM_OUTPUT',
+            'BEFORE',
+            $this,
+            'handle_form_output',
+            array()
+        );
+
+        if($this->getConf('loginprotect')) {
+            // inject in login form
             $controller->register_hook(
-                'HTML_REGISTERFORM_OUTPUT',
+                'HTML_LOGINFORM_OUTPUT',
                 'BEFORE',
                 $this,
-                'handle_editform_output',
-                array('editform' => false, 'oldhook' => false)
+                'handle_form_output',
+                array()
+            );
+            // check on login
+            $controller->register_hook(
+                'AUTH_LOGIN_CHECK',
+                'BEFORE',
+                $this,
+                'handle_login',
+                array()
             );
         }
     }
 
     /**
-     * Will intercept the 'save' action and check for CAPTCHA first.
+     * Check if the current mode should be handled by CAPTCHA
+     *
+     * Note: checking needs to be done when a form has been submitted, not when the form
+     * is shown for the first time. Except for the editing process this is not determined
+     * by $act alone but needs to inspect other input variables.
+     *
+     * @param string $act cleaned action mode
+     * @return bool
      */
-    function handle_act_preprocess(&$event, $param) {
-        $act = $this->_act_clean($event->data);
-        if(!('save' == $act || ($this->getConf('regprotect') &&
-                'register' == $act &&
-                $_POST['save']))
-        ) {
-            return; // nothing to do for us
+    protected function needs_checking($act) {
+        global $INPUT;
+
+        switch($act) {
+            case 'save':
+                return true;
+            case 'register':
+            case 'resendpwd':
+                return $INPUT->bool('save');
+            case 'login':
+                // we do not handle this here, but in handle_login()
+            default:
+                return false;
         }
+    }
+
+    /**
+     * Aborts the given mode
+     *
+     * Aborting depends on the mode. It might unset certain input parameters or simply switch
+     * the mode to something else (giving as return which needs to be passed back to the
+     * ACTION_ACT_PREPROCESS event)
+     *
+     * @param string $act cleaned action mode
+     * @return string the new mode to use
+     */
+    protected function abort_action($act) {
+        global $INPUT;
+
+        switch($act) {
+            case 'save':
+                return 'preview';
+            case 'register':
+            case 'resendpwd':
+                $INPUT->post->set('save', false);
+                return $act;
+            case 'login':
+                // we do not handle this here, but in handle_login()
+            default:
+                return $act;
+        }
+    }
+
+    /**
+     * Handles CAPTCHA check in login
+     *
+     * Logins happen very early in the DokuWiki lifecycle, so we have to intercept them
+     * in their own event.
+     *
+     * @param Doku_Event $event
+     * @param $param
+     */
+    public function handle_login(Doku_Event $event, $param) {
+        global $INPUT;
+        if(!$this->getConf('loginprotect')) return; // no protection wanted
+        if(!$INPUT->bool('u')) return; // this login was not triggered by a form
+
+        // we need to have $ID set for the captcha check
+        global $ID;
+        $ID = getID();
+
+        /** @var helper_plugin_captcha $helper */
+        $helper = plugin_load('helper', 'captcha');
+        if(!$helper->check()) {
+            $event->data['silent'] = true; // we have our own message
+            $event->result = false; // login fail
+            $event->preventDefault();
+            $event->stopPropagation();
+        }
+    }
+
+    /**
+     * Intercept all actions and check for CAPTCHA first.
+     */
+    public function handle_captcha_input(Doku_Event $event, $param) {
+        $act = act_clean($event->data);
+        if(!$this->needs_checking($act)) return;
 
         // do nothing if logged in user and no CAPTCHA required
         if(!$this->getConf('forusers') && $_SERVER['REMOTE_USER']) {
@@ -83,30 +166,20 @@ class action_plugin_captcha extends DokuWiki_Action_Plugin {
         }
 
         // check captcha
+        /** @var helper_plugin_captcha $helper */
         $helper = plugin_load('helper', 'captcha');
         if(!$helper->check()) {
-            if($act == 'save') {
-                // stay in preview mode
-                $event->data = 'preview';
-            } else {
-                // stay in register mode, but disable the save parameter
-                $_POST['save'] = false;
-            }
+            $event->data = $this->abort_action($act);
         }
     }
 
     /**
-     * Create the additional fields for the edit form
+     * Inject the CAPTCHA in a DokuForm
      */
-    function handle_editform_output(&$event, $param) {
-        // check if source view -> no captcha needed
-        if(!$param['oldhook']) {
-            // get position of submit button
-            $pos = $event->data->findElementByAttribute('type', 'submit');
-            if(!$pos) return; // no button -> source view mode
-        } elseif($param['editform'] && !$event->data['writable']) {
-            if($param['editform'] && !$event->data['writable']) return;
-        }
+    public function handle_form_output(Doku_Event $event, $param) {
+        // get position of submit button
+        $pos = $event->data->findElementByAttribute('type', 'submit');
+        if(!$pos) return; // no button -> source view mode
 
         // do nothing if logged in user and no CAPTCHA required
         if(!$this->getConf('forusers') && $_SERVER['REMOTE_USER']) {
@@ -114,35 +187,12 @@ class action_plugin_captcha extends DokuWiki_Action_Plugin {
         }
 
         // get the CAPTCHA
+        /** @var helper_plugin_captcha $helper */
         $helper = plugin_load('helper', 'captcha');
-        $out    = $helper->getHTML();
+        $out = $helper->getHTML();
 
-        if($param['oldhook']) {
-            // old wiki - just print
-            echo $out;
-        } else {
-            // new wiki - insert at correct position
-            $event->data->insertElement($pos++, $out);
-        }
-    }
-
-    /**
-     * Pre-Sanitize the action command
-     *
-     * Similar to act_clean in action.php but simplified and without
-     * error messages
-     */
-    function _act_clean($act) {
-        // check if the action was given as array key
-        if(is_array($act)) {
-            list($act) = array_keys($act);
-        }
-
-        //remove all bad chars
-        $act = strtolower($act);
-        $act = preg_replace('/[^a-z_]+/', '', $act);
-
-        return $act;
+        // new wiki - insert after the submit button
+        $event->data->insertElement($pos + 1, $out);
     }
 
 }
