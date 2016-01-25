@@ -18,6 +18,7 @@
         "nginx",
         "php5-fpm"
     ],
+    "license": "free",
     "arguments": {
         "install" : [
             {
