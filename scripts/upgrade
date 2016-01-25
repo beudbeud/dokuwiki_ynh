@@ -29,6 +29,10 @@ sudo cp ../conf/acl.auth.php $final_path/conf
 # See https://www.dokuwiki.org/update_check
 sudo touch $final_path/doku.php
 
+# Remove deleted files
+# See https://www.dokuwiki.org/install:unused_files
+grep -Ev '^($|#)' ../sources/data/deleted.files | xargs -I {} sudo rm -vrf $final_path/{}
+
 # Files owned by root, www-data can just read
 sudo find $final_path -type f | xargs sudo chmod 0644
 sudo find $final_path -type d | xargs sudo chmod 755
