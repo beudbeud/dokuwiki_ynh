@@ -16,6 +16,20 @@ if [[ ! $? -eq 0 ]]; then
     exit 1
 fi
 
+# Path need a trailing slash, and location does not.
+# See conf/nginx.conf usage
+location=$path
+if [[ ! $path == */ ]]; then
+    # no trailing slash, so add it
+    path=$path/
+fi
+if [[ ! "$location" == "/" ]]; then
+    # remove possible trailing slash
+    location=${location%/}
+fi
+
+
+
 # Modify dokuwiki conf
 sed -i "s@YNH_ADMIN_USER@$admin@g" ../conf/$APP.php
 
@@ -36,6 +50,7 @@ sudo chown -R www-data:root $final_path/{conf,data,data/attic,data/cache,data/in
 sudo chmod -R 700 $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins}
 
 # Modify Nginx configuration file and copy it to Nginx conf directory
+sed -i "s@YNH_WWW_LOCATION@$location@g" ../conf/nginx.conf
 sed -i "s@YNH_WWW_PATH@$path@g" ../conf/nginx.conf
 sed -i "s@YNH_WWW_ALIAS@$final_path/@g" ../conf/nginx.conf
 sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/dokuwiki.conf
