@@ -11,7 +11,7 @@ domain=$(sudo yunohost app setting $app domain)
 path=$(sudo yunohost app setting $app path)
 
 # Backup sources & data
-sudo cp -a /var/www/$app/. $backup_dir/sources
+ynh_backup "/var/www/$app" "sources"
 
 # Copy Nginx 
-sudo cp -a /etc/nginx/conf.d/$domain.d/$app.conf $backup_dir/nginx.conf
+ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "nginx.conf"
