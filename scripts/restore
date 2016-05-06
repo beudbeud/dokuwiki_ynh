@@ -1,11 +1,25 @@
 #!/bin/bash
-# This restore script is adapted to Yunohost >=2.4
 
-# The parameter $1 is the backup directory location dedicated to the app
-backup_dir=$1
+# causes the shell to exit if any subcommand or pipeline returns a non-zero status
+set -e
 
-# The parameter $2 is the id of the app instance ex: ynhexample__2
-app=$2
+# Source YNH helpers
+. /usr/share/yunohost/helpers
+
+# This is a multi-instance app, meaning it can be installed several times independently
+# The id of the app as stated in the manifest is available as $YNH_APP_ID
+# The instance number is available as $YNH_APP_INSTANCE_NUMBER (equals "1", "2", ...)
+# The app instance name is available as $YNH_APP_INSTANCE_NAME
+#    - the first time the app is installed, YNH_APP_INSTANCE_NAME = ynhexample
+#    - the second time the app is installed, YNH_APP_INSTANCE_NAME = ynhexample__2
+#    - ynhexample__{N} for the subsequent installations, with N=3,4, ...
+# The app instance name is probably what you are interested the most, since this is
+# guaranteed to be unique. This is a good unique identifier to define installation path,
+# db names, ...
+app=$YNH_APP_INSTANCE_NAME
+
+# Retrieve arguments
+domain=$(sudo yunohost app setting $app domain)
 
 # Get old parameter of the app
 domain=$(sudo yunohost app setting $app domain)
@@ -21,6 +35,7 @@ if [[ ! $? -eq 0 ]]; then
 fi
 
 final_path=/var/www/$app
+
 if [ -d $final_path ]; then
     echo "There is already a directory: $final_path " | sudo tee /dev/stderr
     exit 1
@@ -33,14 +48,14 @@ if [ -f $conf ]; then
 fi
 
 # Restore sources & data
-sudo cp -a "${backup_dir}/sources" $final_path
+sudo cp -a "./sources" $final_path
 
 # Set permissions
 sudo chown -R www-data:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins}
 sudo chmod -R 700 $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins}
 
 # Restore conf files
-sudo cp -a "${backup_dir}/nginx.conf" $conf
+sudo cp -a "./conf/nginx.conf" $conf
 
 # Reload Nginx
 sudo service nginx reload
@@ -50,5 +65,3 @@ if [ "$is_public" = "Yes" ];
 then
   sudo yunohost app setting dokuwiki unprotected_uris -v "/"
 fi
-
-sudo service nginx reload
