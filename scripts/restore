@@ -63,5 +63,5 @@ sudo service nginx reload
 # Set ssowat config
 if [ "$is_public" = "Yes" ];
 then
-  sudo yunohost app setting dokuwiki unprotected_uris -v "/"
+  sudo yunohost app setting $app unprotected_uris -v "/"
 fi
