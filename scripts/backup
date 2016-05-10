@@ -26,8 +26,7 @@ domain=$(sudo yunohost app setting $app domain)
 backup_dir=$YNH_APP_BACKUP_DIR
 
 # Backup sources & data
-ynh_backup "/var/www/$app" "sources"
+ynh_backup "/var/www/$app" "./sources"
 
 # Copy Nginx conf
-sudo mkdir -p ./conf
-ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf/nginx.conf"
+ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "./conf/nginx.conf"

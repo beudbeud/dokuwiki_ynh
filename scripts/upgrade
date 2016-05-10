@@ -1,38 +1,47 @@
 #!/bin/bash
-APP=`echo -n doku;echo wiki`
-domain=$(sudo yunohost app setting dokuwiki domain)
-path=$(sudo yunohost app setting dokuwiki path)
-admin=$(sudo yunohost app setting dokuwiki admin)
-is_public=$(sudo yunohost app setting dokuwiki is_public)
+
+# causes the shell to exit if any subcommand or pipeline returns a non-zero status
+set -e
+
+# This is a multi-instance app, meaning it can be installed several times independently
+# The id of the app as stated in the manifest is available as $YNH_APP_ID
+# The instance number is available as $YNH_APP_INSTANCE_NUMBER (equals "1", "2", ...)
+# The app instance name is available as $YNH_APP_INSTANCE_NAME
+#    - the first time the app is installed, YNH_APP_INSTANCE_NAME = ynhexample
+#    - the second time the app is installed, YNH_APP_INSTANCE_NAME = ynhexample__2
+#    - ynhexample__{N} for the subsequent installations, with N=3,4, ...
+# The app instance name is probably what you are interested the most, since this is
+# guaranteed to be unique. This is a good unique identifier to define installation path,
+# db names, ...
+app=$YNH_APP_INSTANCE_NAME
+
+# Retrieve arguments
+domain=$YNH_APP_ARG_DOMAIN
+path=$YNH_APP_ARG_PATH
+admin=$YNH_APP_ARG_ADMIN
+is_public=$YNH_APP_ARG_IS_PUBLIC
+
+# Remove trailing slash to path
+path=${path%/}
+#force location to be / or /foo
+location=${path:-/}
 
 # admin default value, if not set
 if [ -z "$admin" ];
 then
     admin=$(sudo yunohost user list | grep 'username' -m1 | awk '{print $2}')
-    sudo yunohost app setting dokuwiki is_public -v "$is_public"
+    sudo yunohost app setting $app is_public -v "$is_public"
 fi
 
-
-# Path need a trailing slash, and location does not.
-# See conf/nginx.conf usage
-location=$path
-if [[ ! $path == */ ]]; then
-    # no trailing slash, so add it
-    path=$path/
-fi
-if [[ ! "$location" == "/" ]]; then
-    # remove possible trailing slash
-    location=${location%/}
-fi
 
 # Modify dokuwiki conf
-sed -i "s@YNH_ADMIN_USER@$admin@g" ../conf/$APP.php
+sed -i "s@YNH_ADMIN_USER@$admin@g" ../conf/dokuwiki.php
 
 # Copy files to the right place
-final_path=/var/www/dokuwiki
+final_path=/var/www/$app
 sudo mkdir -p $final_path
 sudo cp -a ../sources/* $final_path
-sudo cp ../conf/$APP.php $final_path/conf
+sudo cp ../conf/dokuwiki.php $final_path/conf
 sudo cp ../conf/acl.auth.php $final_path/conf
 
 # Remove upgrade notification
@@ -56,12 +65,12 @@ sudo chmod -R 700 $final_path/{conf,data,data/attic,data/cache,data/index,data/l
 sed -i "s@YNH_WWW_LOCATION@$location@g" ../conf/nginx.conf
 sed -i "s@YNH_WWW_PATH@$path@g" ../conf/nginx.conf
 sed -i "s@YNH_WWW_ALIAS@$final_path/@g" ../conf/nginx.conf
-sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/dokuwiki.conf
+sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
 
 if [ "$is_public" = "Yes" ];
 then
-  sudo yunohost app setting dokuwiki skipped_uris -d
-  sudo yunohost app setting dokuwiki unprotected_uris -v "/"
+  sudo yunohost app setting $app skipped_uris -d
+  sudo yunohost app setting $app unprotected_uris -v "/"
 fi
 
 sudo service nginx reload
