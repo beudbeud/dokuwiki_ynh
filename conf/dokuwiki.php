@@ -69,14 +69,14 @@ $conf['remote']      = 0;                //Enable/disable remote interfaces
 $conf['remoteuser']  = '!!not set !!';   //user/groups that have access to remote interface (comma separated)
 
 /* LDAP Yunohost config */
-$conf['auth']['ldap']['server']      = 'localhost';
-$conf['auth']['ldap']['port']        = 389;
-$conf['auth']['ldap']['version']    = 3;
-$conf['auth']['ldap']['usertree']    = 'ou=users,dc=yunohost,dc=org';
-$conf['auth']['ldap']['userfilter']  = '(&(uid=%{user})(objectClass=posixAccount))';
+$conf['plugin']['authldap']['server']      = 'localhost';
+$conf['plugin']['authldap']['port']        = 389;
+$conf['plugin']['authldap']['version']    = 3;
+$conf['plugin']['authldap']['usertree']    = 'ou=users,dc=yunohost,dc=org';
+$conf['plugin']['authldap']['userfilter']  = '(&(uid=%{user})(objectClass=posixAccount))';
 # no groups
-#$conf['auth']['ldap']['grouptree']   = 'ou=Group, dc=server, dc=tld';
-#$conf['auth']['ldap']['groupfilter'] = '(&(objectClass=posixGroup)(|(gidNumber=%{gid})(memberUID=%{user})))'; 
+#$conf['plugin']['authldap']['grouptree']   = 'ou=Group, dc=server, dc=tld';
+#$conf['plugin']['authldap']['groupfilter'] = '(&(objectClass=posixGroup)(|(gidNumber=%{gid})(memberUID=%{user})))'; 
 
 
 /* Antispam Features */
