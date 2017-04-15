@@ -1,63 +1,59 @@
 #!/bin/bash
+# This restore script is adapted to Yunohost >=2.4
 
-# causes the shell to exit if any subcommand or pipeline returns a non-zero status
-set -e
+# Exit on command errors and treat unset variables as an error
+set -eu
 
-# Source YNH helpers
-. /usr/share/yunohost/helpers
-
-# This is a multi-instance app, meaning it can be installed several times independently
-# The id of the app as stated in the manifest is available as $YNH_APP_ID
-# The instance number is available as $YNH_APP_INSTANCE_NUMBER (equals "1", "2", ...)
-# The app instance name is available as $YNH_APP_INSTANCE_NAME
-#    - the first time the app is installed, YNH_APP_INSTANCE_NAME = ynhexample
-#    - the second time the app is installed, YNH_APP_INSTANCE_NAME = ynhexample__2
-#    - ynhexample__{N} for the subsequent installations, with N=3,4, ...
-# The app instance name is probably what you are interested the most, since this is
-# guaranteed to be unique. This is a good unique identifier to define installation path,
-# db names, ...
+# The parameter $2 is the id of the app instance ex: ynhexample__2
 app=$YNH_APP_INSTANCE_NAME
 
-# Retrieve arguments
-domain=$(sudo yunohost app setting $app domain)
+# Source app helpers
+source /usr/share/yunohost/helpers
 
 # Get old parameter of the app
-domain=$(sudo yunohost app setting $app domain)
-path=$(sudo yunohost app setting $app path)
-user=$(sudo yunohost app setting $app allowed_users)
-is_public=$(sudo yunohost app setting $app is_public)
+domain=$(ynh_app_setting_get $app domain)
+path=$(ynh_app_setting_get $app path)
+is_public=$(ynh_app_setting_get $app is_public)
 
 # Check domain/path availability
-sudo yunohost app checkurl $domain$path -a $app
-if [[ ! $? -eq 0 ]]; then
-    echo "There is already an app on this URL : $domain$path" | sudo tee /dev/stderr
-    exit 1
-fi
+sudo yunohost app checkurl "${domain}${path}" -a "$app" \
+    || ynh_die "Path not available: ${domain}${path}"
 
-final_path=/var/www/$app
-
+# Check $final_path
+final_path="/var/www/${app}"
 if [ -d $final_path ]; then
-    echo "There is already a directory: $final_path " | sudo tee /dev/stderr
-    exit 1
+	ynh_die "There is already a directory: $final_path"
 fi
 
-conf=/etc/nginx/conf.d/$domain.d/$app.conf
-if [ -f $conf ]; then
-    echo "There is already a nginx conf file at this path: $conf " | sudo tee /dev/stderr
-    exit 1
+# Check configuration files nginx
+nginx_conf="/etc/nginx/conf.d/${domain}.d/${app}.conf"
+if [ -f $nginx_conf ]; then
+	ynh_die "The NGINX configuration already exists at '${nginx_conf}'. You should safely delete it before restoring this app."
+fi
+# Check configuration files php-fpm
+phpfpm_conf="/etc/php5/fpm/pool.d/${app}.conf"
+if [ -f $phpfpm_conf ]; then 
+	ynh_die "The PHP FPM configuration already exists at '${phpfpm_conf}'. You should safely delete it before restoring this app."
 fi
 
-# Restore sources & data
-sudo cp -a "./sources" $final_path
-
-# Restore conf files
-sudo cp -a "./conf/nginx.conf" $conf
-
-# Reload Nginx
-sudo service nginx reload
-
-# Set ssowat config
-if [ "$is_public" = "Yes" ];
-then
-  sudo yunohost app setting $app unprotected_uris -v "/"
+phpfpm_ini="/etc/php5/fpm/conf.d/20-${app}.ini"
+if [ -f $phpfpm_ini ]; then
+	ynh_die "The PHP FPM INI configuration already exists at '${phpfpm_ini}'. You should safely delete it before restoring this app."
 fi
+
+ # Restore sources & data
+sudo cp -a ./sources "${final_path}"
+
+# Set permissions
+sudo chown -R www-data: "${final_path}"
+
+# Restore nginx configuration files
+sudo cp -a ./nginx.conf   "${nginx_conf}"
+# Restore php-fpm configuration files
+sudo cp -a ./php-fpm.conf "${phpfpm_conf}"
+sudo cp -a ./php-fpm.ini "${phpfpm_ini}"
+
+# Reload services
+sudo systemctl reload php5-fpm
+sudo systemctl reload nginx
+sudo yunohost app ssowatconf
