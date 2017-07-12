@@ -44,6 +44,9 @@ ynh_app_setting_set $app path $path
 ynh_app_setting_set $app admin $admin
 ynh_app_setting_set $app is_public $is_public
 
+# Create system user dedicace for this app
+ynh_system_user_create $app
+
 # Modify dokuwiki conf
 sed -i "s@YNH_ADMIN_USER@$admin@g" ../conf/dokuwiki.php
 
@@ -57,17 +60,15 @@ SETUP_SOURCE
 sudo cp ../conf/dokuwiki.php $final_path/conf
 sudo cp ../conf/acl.auth.php $final_path/conf
 
-# Files owned by www-data can just read
-# sudo find $final_path -type f -print0 | xargs -0 sudo chmod 0644
-# sudo find $final_path -type d -print0 | xargs -0 sudo chmod 0755
-sudo chown -R www-data: $final_path
+# Files owned by dokuwiki can just read
+sudo chown -R root: $final_path
 
 # except for conf, data, some data subfolders, and lib/plugin, where www-data must have write permissions
-sudo chown -R www-data:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
+sudo chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
 sudo chmod -R 700 $final_path/conf
 sudo chmod -R 700 $final_path/data
-sudo chmod -R 700 $final_path/lib/plugins
-sudo chmod -R 700 $final_path/lib/tpl
+sudo chmod -R 755 $final_path/lib/plugins
+sudo chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
 
 # Modify Nginx configuration file and copy it to Nginx conf directory
 sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
@@ -83,19 +84,11 @@ fi
 # Create the php-fpm pool config
 POOL_FPM
 
-# Public access for curl
-ynh_app_setting_set $app unprotected_uris "/"
-
-# Relaod SSOwat configuration
-sudo yunohost app ssowatconf
-
-# Reload php5-fpm and Nginx
-sudo systemctl reload php5-fpm
-sudo systemctl reload nginx
-
-if [ "$is_public" = "No" ];
-then
-	# Exit public access
-	ynh_app_setting_delete $app unprotected_uris
-	sudo yunohost app ssowatconf
+# If app is public, add url to SSOWat conf as skipped_uris
+if [[ $is_public -eq 1 ]]; then
+  # unprotected_uris allows SSO credentials to be passed anyway.
+  ynh_app_setting_set "$app" unprotected_uris "/"
 fi
+
+# Reload Nginx
+sudo systemctl reload nginx

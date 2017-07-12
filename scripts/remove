@@ -6,6 +6,8 @@ set -u
 # Get multi-instances specific variables
 app=$YNH_APP_INSTANCE_NAME
 
+# Loads the generic functions usually used in the script
+source .fonctions 
 # Source app helpers
 . /usr/share/yunohost/helpers
 
@@ -21,5 +23,8 @@ sudo rm -f "/etc/php5/fpm/conf.d/20-${app}.ini"
 # Reload services
 sudo systemctl reload php5-fpm
 sudo systemctl reload nginx
+
+# Delete system user dedicace for this app
+ynh_system_user_delete $app
 
 echo -e "\e[0m"	# Restore normal color
