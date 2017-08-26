@@ -98,7 +98,7 @@ fi
 sudo chown -R $app:root $final_path/{conf,data,lib/plugins,lib/tpl}
 sudo chmod -R 700 $final_path/conf
 sudo chmod -R 700 $final_path/data
-sudo chmod -R 700 $final_path/lib/plugins
+sudo chmod -R 755 $final_path/lib/plugins
 sudo chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
 
 # Modify Nginx configuration file and copy it to Nginx conf directory
