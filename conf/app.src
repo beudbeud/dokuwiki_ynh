@@ -1,0 +1,6 @@
+SOURCE_URL=https://download.dokuwiki.org/src/dokuwiki/dokuwiki-2017-02-19b.tgz
+SOURCE_SUM=ea11e4046319710a2bc6fdf58b5cda86
+SOURCE_SUM_PRG=md5sum
+SOURCE_FORMAT=tar.gz
+SOURCE_IN_SUBDIR=true
+SOURCE_FILENAME=

@@ -1,7 +1,30 @@
 #!/bin/bash
 
-# Exit on command errors and treat unset variables as an error
-set -eu
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+#=================================================
+# MANAGE SCRIPT FAILURE
+#=================================================
+
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# RETRIEVE ARGUMENTS FROM THE MANIFEST
+#=================================================
+
+domain=$YNH_APP_ARG_DOMAIN
+path_url=$YNH_APP_ARG_PATH
+admin=$YNH_APP_ARG_ADMIN
+is_public=$YNH_APP_ARG_IS_PUBLIC
+#language=$YNH_APP_ARG_LANGUAGE
 
 # This is a multi-instance app, meaning it can be installed several times independently
 # The id of the app as stated in the manifest is available as $YNH_APP_ID
@@ -13,55 +36,103 @@ set -eu
 # The app instance name is probably what you are interested the most, since this is
 # guaranteed to be unique. This is a good unique identifier to define installation path,
 # db names, ...
-# Retrieve arguments
-
-source .fonctions	# Loads the generic functions usually used in the script
-# Source app helpers
-source /usr/share/yunohost/helpers
-
-TRAP_ON	# Active trap for strop script if detect error.
-
-domain=$YNH_APP_ARG_DOMAIN
-path=$YNH_APP_ARG_PATH
-admin=$YNH_APP_ARG_ADMIN
-is_public=$YNH_APP_ARG_IS_PUBLIC
-
 app=$YNH_APP_INSTANCE_NAME
 
-CHECK_VAR "$app" "app name not set"
+#=================================================
+# CHECK IF THE APP CAN BE INSTALLED WITH THESE ARGS
+#=================================================
 
-CHECK_USER "$admin"
+final_path=/var/www/$app
+test ! -e "$final_path" || ynh_die "This path already contains a folder"
 
-CHECK_PATH
+# Normalize the url path syntax
+path_url=$(ynh_normalize_url_path $path_url)
 
-CHECK_DOMAINPATH
+# Check web path availability
+ynh_webpath_available $domain $path_url
+# Register (book) web path
+ynh_webpath_register $app $domain $path_url
 
-CHECK_FINALPATH
+#=================================================
+# STORE SETTINGS FROM MANIFEST
+#=================================================
 
-# Save app settings
 ynh_app_setting_set $app domain $domain
-ynh_app_setting_set $app path $path
+ynh_app_setting_set $app path $path_url
 ynh_app_setting_set $app admin $admin
 ynh_app_setting_set $app is_public $is_public
+#ynh_app_setting_set $app language $language
 
-# Create system user dedicace for this app
+#=================================================
+# STANDARD MODIFICATIONS
+#=================================================
+# DOWNLOAD, CHECK AND UNPACK SOURCE
+#=================================================
+
+ynh_app_setting_set $app final_path $final_path
+# Download, check integrity, uncompress and patch the source from app.src
+ynh_setup_source "$final_path"
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+
+# Create a dedicated nginx config
+ynh_add_nginx_config
+
+#=================================================
+# CREATE DEDICATED USER
+#=================================================
+
+# Create a system user
 ynh_system_user_create $app
 
+#=================================================
+# PHP-FPM CONFIGURATION
+#=================================================
+
+# Create a dedicated php-fpm config
+ynh_add_fpm_config
+
+#=================================================
+# SPECIFIC SETUP
+#=================================================
+# ...
+#=================================================
+
+#=================================================
+# SETUP SYSTEMD
+#=================================================
+
+# Create a dedicated systemd config
+ynh_systemd_config
+
+#=================================================
+# MODIFY A CONFIG FILE
+#=================================================
+
 # Modify dokuwiki conf
-sed -i "s@YNH_ADMIN_USER@$admin@g" ../conf/dokuwiki.php
-
-# Copy files to the right place
-sudo mkdir "$final_path"
-ynh_app_setting_set $app final_path $final_path
-
-# Get source
-SETUP_SOURCE
+#sed -i "s@YNH_ADMIN_USER@$admin@g" ../conf/dokuwiki.php
+ynh_replace_string "YNH_ADMIN_USER" "$admin" "../conf/dokuwiki.php"
 
 sudo cp ../conf/dokuwiki.php $final_path/conf
 sudo cp ../conf/acl.auth.php $final_path/conf
 
+#=================================================
+# STORE THE CHECKSUM OF THE CONFIG FILE
+#=================================================
+
+# Calculate and store the config file checksum into the app settings
+ynh_store_file_checksum "$final_path/conf/dokuwiki.php"
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# SECURE FILES AND DIRECTORIES
+#=================================================
+
 # Files owned by dokuwiki can just read
-sudo chown -R root: $final_path
+chown -R root: $final_path
 
 # except for conf, data, some data subfolders, and lib/plugin, where www-data must have write permissions
 sudo chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
@@ -70,25 +141,37 @@ sudo chmod -R 700 $final_path/data
 sudo chmod -R 755 $final_path/lib/plugins
 sudo chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
 
-# Modify Nginx configuration file and copy it to Nginx conf directory
-sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
-sudo sed -i "s@__PATHTOCHANGE__@$path@g" /etc/nginx/conf.d/$domain.d/$app.conf
-sudo sed -i "s@__FINALPATH__@$final_path@g" /etc/nginx/conf.d/$domain.d/$app.conf
-sudo sed -i "s@__NAMETOCHANGE__@$app@g" /etc/nginx/conf.d/$domain.d/$app.conf
+#=================================================
+# SETUP LOGROTATE
+#=================================================
 
-if [ "$is_public" = "Yes" ];
+# Use logrotate to manage application logfile(s)
+ynh_use_logrotate
+
+#=================================================
+# ADVERTISE SERVICE IN ADMIN PANEL
+#=================================================
+
+#yunohost service add NAME_INIT.D --log "/var/log/FILE.log"
+yunohost service add "$app" --log "/var/log/$app/$app.log"
+
+#=================================================
+# SETUP SSOWAT
+#=================================================
+
+if [ $is_public -eq 0 ]
+then	# Remove the public access
+	ynh_app_setting_delete $app skipped_uris
+fi
+# Make app public if necessary
+if [ $is_public -eq 1 ]
 then
-	sudo sed -i "s@#--PRIVATE--@@g" /etc/nginx/conf.d/$domain.d/$app.conf
+	# unprotected_uris allows SSO credentials to be passed anyway.
+	ynh_app_setting_set $app unprotected_uris "/"
 fi
 
-# Create the php-fpm pool config
-POOL_FPM
+#=================================================
+# RELOAD NGINX
+#=================================================
 
-# If app is public, add url to SSOWat conf as skipped_uris
-if [[ $is_public -eq 1 ]]; then
-  # unprotected_uris allows SSO credentials to be passed anyway.
-  ynh_app_setting_set "$app" unprotected_uris "/"
-fi
-
-# Reload Nginx
-sudo systemctl reload nginx
+systemctl reload nginx
