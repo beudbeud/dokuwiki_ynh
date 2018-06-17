@@ -111,11 +111,15 @@ ynh_add_systemd_config
 # MODIFY A CONFIG FILE
 #=================================================
 
-# Modify dokuwiki conf
-#sed -i "s@YNH_ADMIN_USER@$admin@g" ../conf/dokuwiki.php
-ynh_replace_string "YNH_ADMIN_USER" "$admin" "../conf/dokuwiki.php"
+# Set the "admin" user of Dokuwiki
+ynh_replace_string "YNH_ADMIN_USER" "$admin" "../conf/local.php"
 
-sudo cp ../conf/dokuwiki.php $final_path/conf
+# Copy Yunohost specific configuration
+sudo cp ../conf/local.php $final_path/conf
+
+# Restrict user rights by enforcing "read-only" mode for all users
+# See https://www.dokuwiki.org/acl#background_info
+# Default is "8"
 sudo cp ../conf/acl.auth.php $final_path/conf
 
 #=================================================
@@ -123,7 +127,7 @@ sudo cp ../conf/acl.auth.php $final_path/conf
 #=================================================
 
 # Calculate and store the config file checksum into the app settings
-ynh_store_file_checksum "$final_path/conf/dokuwiki.php"
+#ynh_store_file_checksum "$final_path/conf/local.php"
 
 #=================================================
 # GENERIC FINALIZATION

@@ -106,10 +106,11 @@ if [ -d "${final_path}/data/media" ]; then
 	sudo chown -R $app:root $final_path/{data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp}
 fi
 
-# Modify dokuwiki conf
-#sed -i "s@YNH_ADMIN_USER@$admin@g" ../conf/dokuwiki.php
-ynh_replace_string "YNH_ADMIN_USER" "$admin" "../conf/dokuwiki.php"
-sudo cp ../conf/dokuwiki.php $final_path/conf
+# Set the "admin" user of Dokuwiki
+ynh_replace_string "YNH_ADMIN_USER" "$admin" "../conf/local.php"
+
+# Copy Yunohost specific configuration
+sudo cp ../conf/local.php $final_path/conf
 
 # Do not override ACL configuration file
 if [ ! -f "$final_path/conf/acl.auth.php" ]; then
@@ -140,9 +141,9 @@ done
 #=================================================
 
 # Verify the checksum and backup the file if it's different
-ynh_backup_if_checksum_is_different "$final_path/conf/dokuwiki.php"
+ynh_backup_if_checksum_is_different "$final_path/conf/local.php"
 # Recalculate and store the config file checksum into the app settings
-ynh_store_file_checksum "$final_path/conf/dokuwiki.php"
+ynh_store_file_checksum "$final_path/conf/local.php"
 
 #=================================================
 # SETUP LOGROTATE
