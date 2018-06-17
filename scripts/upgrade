@@ -133,10 +133,23 @@ fi
 # See https://www.dokuwiki.org/update_check
 touch $final_path/doku.php
 
-# Remove deleted files
+# Remove files not used anymore after upgrade
 # See https://www.dokuwiki.org/install:unused_files
-if [ -f "../sources/data/deleted.files" ]; then
-	grep -Ev '^($|#)' ../sources/data/deleted.files | xargs -I {} sudo rm -vrf $final_path/{}
+if [ -f "$final_path/data/deleted.files" ]; then
+	# Move to the dokuwiki installation folder so the "official" commands can be used without adaptation
+	cd $final_path
+
+	# This command could not remove directory
+	#grep -Ev '^($|#)' data/deleted.files | xargs -n 1 rm -vf
+	# => "rm: cannot remove 'vendor/easybook/geshi': Is a directory"
+
+	# That one works as expected
+	grep -Ev '^($|#)' data/deleted.files | xargs -n 1 rm -fr
+
+	# bash "hack" to move back to the location user was before the last cd made
+	# See http://winterdrake.com/unixlinux-trick-cd-back-to-the-previous-directory/
+	# Should be the script folder of the package
+	cd -
 fi
 
 # Update all plugins
