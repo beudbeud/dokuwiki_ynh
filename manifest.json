@@ -30,7 +30,7 @@
         "nginx",
         "php5-fpm"
     ],
-    "license": "free",
+    "license": "GPL-2.0-or-later",
     "arguments": {
         "install" : [
             {
