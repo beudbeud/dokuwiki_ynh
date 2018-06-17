@@ -24,7 +24,7 @@ domain=$YNH_APP_ARG_DOMAIN
 path_url=$YNH_APP_ARG_PATH
 admin=$YNH_APP_ARG_ADMIN
 is_public=$YNH_APP_ARG_IS_PUBLIC
-#language=$YNH_APP_ARG_LANGUAGE
+language=$YNH_APP_ARG_LANGUAGE
 
 # This is a multi-instance app, meaning it can be installed several times independently
 # The id of the app as stated in the manifest is available as $YNH_APP_ID
@@ -61,7 +61,7 @@ ynh_app_setting_set $app domain $domain
 ynh_app_setting_set $app path $path_url
 ynh_app_setting_set $app admin $admin
 ynh_app_setting_set $app is_public $is_public
-#ynh_app_setting_set $app language $language
+ynh_app_setting_set $app language $language
 
 #=================================================
 # STANDARD MODIFICATIONS
@@ -97,25 +97,18 @@ ynh_add_fpm_config
 #=================================================
 # SPECIFIC SETUP
 #=================================================
-# ...
+# CUSTOMIZE DOKUWIKI
 #=================================================
 
-#=================================================
-# SETUP SYSTEMD
-#=================================================
+# Set the "language"
+ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
 
-# Create a dedicated systemd config
-ynh_add_systemd_config
-
-#=================================================
-# MODIFY A CONFIG FILE
-#=================================================
-
-# Set the "admin" user of Dokuwiki
-ynh_replace_string "YNH_ADMIN_USER" "$admin" "../conf/local.php"
+# Set the "admin" user
+ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.php"
 
 # Copy Yunohost specific configuration
 sudo cp ../conf/local.php $final_path/conf
+
 
 # Restrict user rights by enforcing "read-only" mode for all users
 # See https://www.dokuwiki.org/acl#background_info
@@ -128,6 +121,14 @@ sudo cp ../conf/acl.auth.php $final_path/conf
 
 # Calculate and store the config file checksum into the app settings
 #ynh_store_file_checksum "$final_path/conf/local.php"
+#=================================================
+
+#=================================================
+# SETUP SYSTEMD
+#=================================================
+
+# Create a dedicated systemd config
+ynh_add_systemd_config
 
 #=================================================
 # GENERIC FINALIZATION
