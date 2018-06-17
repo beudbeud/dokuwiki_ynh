@@ -110,7 +110,7 @@ ynh_add_fpm_config
 
 # TODO Taken from old "upgrade" script. Should check if it is needed and what it does
 if [ -d "${final_path}/data/media" ]; then
-	sudo chown -R $app:root $final_path/{data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp}
+	chown -R $app:root $final_path/{data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp}
 fi
 
 # Set the "language" of Dokuwiki
@@ -122,16 +122,16 @@ ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
 ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.php"
 
 # Copy Yunohost specific configuration
-sudo cp ../conf/local.php $final_path/conf
+cp ../conf/local.php $final_path/conf
 
 # Do not override ACL configuration file
 if [ ! -f "$final_path/conf/acl.auth.php" ]; then
-	sudo cp ../conf/acl.auth.php $final_path/conf
+	cp ../conf/acl.auth.php $final_path/conf
 fi
 
 # Remove upgrade notification
 # See https://www.dokuwiki.org/update_check
-sudo touch $final_path/doku.php
+touch $final_path/doku.php
 
 # Remove deleted files
 # See https://www.dokuwiki.org/install:unused_files
@@ -185,11 +185,11 @@ chown -R root: $final_path
 # Install script :
 #sudo chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
 
-sudo chown -R $app:root $final_path/{conf,data,lib/plugins,lib/tpl}
-sudo chmod -R 700 $final_path/conf
-sudo chmod -R 700 $final_path/data
-sudo chmod -R 755 $final_path/lib/plugins
-sudo chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
+chown -R $app:root $final_path/{conf,data,lib/plugins,lib/tpl}
+chmod -R 700 $final_path/conf
+chmod -R 700 $final_path/data
+chmod -R 755 $final_path/lib/plugins
+chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
 
 
 #=================================================

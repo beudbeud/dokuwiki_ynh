@@ -107,13 +107,13 @@ ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
 ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.php"
 
 # Copy Yunohost specific configuration
-sudo cp ../conf/local.php $final_path/conf
+cp ../conf/local.php $final_path/conf
 
 
 # Restrict user rights by enforcing "read-only" mode for all users
 # See https://www.dokuwiki.org/acl#background_info
 # Default is "8"
-sudo cp ../conf/acl.auth.php $final_path/conf
+cp ../conf/acl.auth.php $final_path/conf
 
 #=================================================
 # STORE THE CHECKSUM OF THE CONFIG FILE
@@ -140,11 +140,11 @@ ynh_add_systemd_config
 chown -R root: $final_path
 
 # except for conf, data, some data subfolders, and lib/plugin, where www-data must have write permissions
-sudo chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
-sudo chmod -R 700 $final_path/conf
-sudo chmod -R 700 $final_path/data
-sudo chmod -R 755 $final_path/lib/plugins
-sudo chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
+chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
+chmod -R 700 $final_path/conf
+chmod -R 700 $final_path/data
+chmod -R 755 $final_path/lib/plugins
+chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
 
 #=================================================
 # SETUP LOGROTATE

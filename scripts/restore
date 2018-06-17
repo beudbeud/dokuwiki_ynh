@@ -70,11 +70,11 @@ chown -R root: $final_path
 
 # Restore permissions same as from the 'install' script
 # except for conf, data, some data subfolders, and lib/plugin, where www-data must have write permissions
-sudo chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
-sudo chmod -R 700 $final_path/conf
-sudo chmod -R 700 $final_path/data
-sudo chmod -R 755 $final_path/lib/plugins
-sudo chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
+chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
+chmod -R 700 $final_path/conf
+chmod -R 700 $final_path/data
+chmod -R 755 $final_path/lib/plugins
+chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
 
 #=================================================
 # RESTORE THE PHP-FPM CONFIGURATION
