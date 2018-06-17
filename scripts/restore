@@ -95,8 +95,8 @@ yunohost service add $app --log "/var/log/$app/$app.log"
 # RESTORE SYSTEMD
 #=================================================
 
-ynh_restore_file "/etc/systemd/system/$app.service"
-systemctl enable $app.service
+#ynh_restore_file "/etc/systemd/system/$app.service"
+#systemctl enable $app.service
 
 #=================================================
 # RESTORE THE LOGROTATE CONFIGURATION

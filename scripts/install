@@ -128,7 +128,7 @@ cp ../conf/acl.auth.php $final_path/conf
 #=================================================
 
 # Create a dedicated systemd config
-ynh_add_systemd_config
+#ynh_add_systemd_config
 
 #=================================================
 # GENERIC FINALIZATION
