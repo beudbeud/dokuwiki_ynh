@@ -140,12 +140,6 @@ chmod -R 755 $final_path/lib/plugins
 chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
 
 #=================================================
-# SETUP LOGROTATE
-#=================================================
-
-# Use logrotate to manage application logfile(s)
-ynh_use_logrotate
-
 # SETUP SSOWAT
 #=================================================
 

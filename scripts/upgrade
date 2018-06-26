@@ -170,13 +170,6 @@ ynh_backup_if_checksum_is_different "$final_path/conf/local.php"
 # Recalculate and store the config file checksum into the app settings
 ynh_store_file_checksum "$final_path/conf/local.php"
 
-#=================================================
-# SETUP LOGROTATE
-#=================================================
-
-# Use logrotate to manage app-specific logfile(s)
-ynh_use_logrotate --non-append
-
 
 #=================================================
 # GENERIC FINALIZATION

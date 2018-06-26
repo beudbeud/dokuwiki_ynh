@@ -44,13 +44,6 @@ ynh_remove_nginx_config
 ynh_remove_fpm_config
 
 #=================================================
-# REMOVE LOGROTATE CONFIGURATION
-#=================================================
-
-# Remove the app-specific logrotate config
-ynh_remove_logrotate
-
-#=================================================
 # SPECIFIC REMOVE
 #=================================================
 
