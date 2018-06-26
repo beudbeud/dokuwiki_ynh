@@ -61,9 +61,4 @@ ynh_backup "/etc/php5/fpm/conf.d/20-$app.ini"
 
 ynh_backup "/etc/logrotate.d/$app"
 
-#=================================================
-# BACKUP SYSTEMD
-#=================================================
-
-#ynh_backup "/etc/systemd/system/$app.service"
 

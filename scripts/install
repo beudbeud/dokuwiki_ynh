@@ -124,13 +124,6 @@ cp ../conf/acl.auth.php $final_path/conf
 #=================================================
 
 #=================================================
-# SETUP SYSTEMD
-#=================================================
-
-# Create a dedicated systemd config
-#ynh_add_systemd_config
-
-#=================================================
 # GENERIC FINALIZATION
 #=================================================
 # SECURE FILES AND DIRECTORIES
@@ -153,14 +146,6 @@ chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
 # Use logrotate to manage application logfile(s)
 ynh_use_logrotate
 
-#=================================================
-# ADVERTISE SERVICE IN ADMIN PANEL
-#=================================================
-
-#yunohost service add NAME_INIT.D --log "/var/log/FILE.log"
-yunohost service add "$app" --log "/var/log/$app/$app.log"
-
-#=================================================
 # SETUP SSOWAT
 #=================================================
 

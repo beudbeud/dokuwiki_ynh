@@ -177,12 +177,6 @@ ynh_store_file_checksum "$final_path/conf/local.php"
 # Use logrotate to manage app-specific logfile(s)
 ynh_use_logrotate --non-append
 
-#=================================================
-# SETUP SYSTEMD
-#=================================================
-
-# Create a dedicated systemd config
-#ynh_add_systemd_config
 
 #=================================================
 # GENERIC FINALIZATION
