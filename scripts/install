@@ -153,10 +153,14 @@ chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
 # SETUP SSOWAT
 #=================================================
 
-if [ $is_public -eq 0 ]
-then	# Remove the public access
-	ynh_app_setting_delete $app skipped_uris
-fi
+# Not needed as no skipped_uris have been added before.
+# Example : "ynh_app_setting_set $app skipped_uris ..."
+# See https://github.com/YunoHost-Apps/dokuwiki_ynh/pull/37 for explanation
+#if [ $is_public -eq 0 ]
+#then	# Remove the public access
+#	ynh_app_setting_delete $app skipped_uris
+#fi
+
 # Make app public if necessary
 if [ $is_public -eq 1 ]
 then
