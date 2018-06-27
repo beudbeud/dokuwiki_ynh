@@ -124,43 +124,45 @@ ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.php"
 # Copy Yunohost specific configuration
 cp ../conf/local.php $final_path/conf
 
-# Do not override ACL configuration file
+# Do not overwrite existing ACL configuration file as it could have user customization's and settings.
+# Create file if it does not exist
+# See https://www.dokuwiki.org/acl#background_info
 if [ ! -f "$final_path/conf/acl.auth.php" ]; then
 	cp ../conf/acl.auth.php $final_path/conf
 fi
 
-# Remove upgrade notification
+# Remove upgrade notification inside Dokuwiki's admin panel
 # See https://www.dokuwiki.org/update_check
 touch $final_path/doku.php
 
 # Remove files not used anymore after upgrade
 # See https://www.dokuwiki.org/install:unused_files
 if [ -f "$final_path/data/deleted.files" ]; then
-	# Move to the dokuwiki installation folder so the "official" commands can be used without adaptation
-	cd $final_path
 
-	# This command could not remove directory
-	#grep -Ev '^($|#)' data/deleted.files | xargs -n 1 rm -vf
-	# => "rm: cannot remove 'vendor/easybook/geshi': Is a directory"
+	# Use a "sub process" to start a new shell to run these commands
+	# Allow to use only one "cd" and to be more efficent
+	(
+		# Move to the dokuwiki installation folder so the "official" commands can be used without adaptation
+		cd $final_path
 
-	# That one works as expected
-	grep -Ev '^($|#)' data/deleted.files | xargs -n 1 rm -fr
+		# This command could not remove directory
+		#grep -Ev '^($|#)' data/deleted.files | xargs -n 1 rm -vf
+		# => "rm: cannot remove 'vendor/easybook/geshi': Is a directory"
 
-	# bash "hack" to move back to the location user was before the last cd made
-	# See http://winterdrake.com/unixlinux-trick-cd-back-to-the-previous-directory/
-	# Should be the script folder of the package
-	cd -
+		# That one works as expected
+		grep -Ev '^($|#)' data/deleted.files | xargs -n 1 rm -fr
+	)
 fi
 
 # Update all plugins
 for name_plugin in $(sudo -s cat $final_path/lib/plugins/*/plugin.info.txt | grep url | awk -F':' '{print $3}');
 do
-		# Get a official plugin for dokuwiki, not update a no-official
-		sudo wget -nv --quiet "https://github.com/splitbrain/dokuwiki-plugin-${name_plugin}/zipball/master" -O "${name_plugin}.zip" -o /dev/null || true
-		if [ -s "${name_plugin}.zip" ]; then
-			sudo unzip ${name_plugin}.zip
-			sudo cp -a splitbrain-dokuwiki-plugin-${name_plugin}*/. "${final_path}/lib/plugins/${name_plugin}/"
-		fi
+	# Get a official plugin for dokuwiki, not update a no-official
+	sudo wget -nv --quiet "https://github.com/splitbrain/dokuwiki-plugin-${name_plugin}/zipball/master" -O "${name_plugin}.zip" -o /dev/null || true
+	if [ -s "${name_plugin}.zip" ]; then
+		sudo unzip ${name_plugin}.zip
+		sudo cp -a splitbrain-dokuwiki-plugin-${name_plugin}*/. "${final_path}/lib/plugins/${name_plugin}/"
+	fi
 done
 
 #=================================================
