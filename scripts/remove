@@ -47,8 +47,6 @@ ynh_remove_fpm_config
 # SPECIFIC REMOVE
 #=================================================
 
-# Remove the log files
-ynh_secure_remove "/var/log/$app/"
 
 #=================================================
 # GENERIC FINALIZATION

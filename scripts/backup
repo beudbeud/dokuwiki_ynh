@@ -36,8 +36,6 @@ domain=$(ynh_app_setting_get $app domain)
 # BACKUP THE APP MAIN DIR
 #=================================================
 
-# TODO taken from old "backup" script
-#ynh_backup "$final_path" "sources" 1
 ynh_backup "$final_path"
 
 #=================================================

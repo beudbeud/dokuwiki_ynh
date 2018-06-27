@@ -218,16 +218,8 @@ then
 	ynh_app_setting_set $app unprotected_uris "/"
 fi
 
-# TODO: Still needed ??
-#if [ "$is_public" = "Yes" ];
-#then
-#	sudo sed -i "s@#--PRIVATE--@@g" /etc/nginx/conf.d/$domain.d/$app.conf
-#fi
-
 #=================================================
 # RELOAD NGINX
 #=================================================
 
 systemctl reload nginx
-# TODO
-#sudo yunohost app ssowatconf
