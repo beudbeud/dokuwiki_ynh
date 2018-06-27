@@ -113,18 +113,16 @@ if [ -d "${final_path}/data/media" ]; then
 	chown -R $app:root $final_path/{data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp}
 fi
 
-# Set the "admin" user
+# Set the "admin" user if not done during installation
+# Do nothing otherwize
 ynh_replace_string "__YNH_ADMIN_USER__" "$admin"  "../conf/local.protected.php"
 
 
 # Copy Yunohost specific configuration
 
-cp ../conf/local.protected.php $final_path/conf
-# This File cannot be modified directly by Dokuwiki, only by hand or by Yunohost
-# It will only be updated by Yunohost package or directly by adventurous users
-
 # Do not overwrite existing dokuwiki configuration as it could have user customization's and settings.
 # Create file if it does not exist
+# Cannot use helper "ynh_backup_if_checksum_is_different"
 if [ ! -f "$final_path/conf/local.php" ]; then
 
 	# Set the default "language" only when file does not exist beforehand
@@ -137,6 +135,7 @@ fi
 # Do not overwrite existing ACL configuration file as it could have user customization's and settings.
 # Create file if it does not exist
 # See https://www.dokuwiki.org/acl#background_info
+# Cannot use helper "ynh_backup_if_checksum_is_different"
 if [ ! -f "$final_path/conf/acl.auth.php" ]; then
 	cp ../conf/acl.auth.php $final_path/conf
 fi
@@ -178,9 +177,9 @@ done
 #=================================================
 
 # Verify the checksum and backup the file if it's different
-ynh_backup_if_checksum_is_different "$final_path/conf/local.php"
+ynh_backup_if_checksum_is_different "$final_path/conf/local.protected.php"
 # Recalculate and store the config file checksum into the app settings
-ynh_store_file_checksum "$final_path/conf/local.php"
+ynh_store_file_checksum "$final_path/conf/local.protected.php"
 
 
 #=================================================
