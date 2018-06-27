@@ -100,14 +100,22 @@ ynh_add_fpm_config
 # CUSTOMIZE DOKUWIKI
 #=================================================
 
+# Set the "admin" user
+ynh_replace_string "__YNH_ADMIN_USER__" "$admin"  "../conf/local.protected.php"
+
 # Set the "language"
 ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
 
-# Set the "admin" user
-ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.php"
 
 # Copy Yunohost specific configuration
-cp ../conf/local.php $final_path/conf
+
+cp ../conf/local.protected.php $final_path/conf
+# This File cannot be modified directly by Dokuwiki, only by hand or by Yunohost
+# It will only be updated by Yunohost package or directly by adventurous users
+
+cp ../conf/local.php           $final_path/conf
+# This file might be modified by dokuwiki admin panel or by plugins
+# It will not be modified by Yunohost in order to keep user settings
 
 
 # Restrict user rights by enforcing "read-only" mode for all users

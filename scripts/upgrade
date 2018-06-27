@@ -113,16 +113,26 @@ if [ -d "${final_path}/data/media" ]; then
 	chown -R $app:root $final_path/{data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp}
 fi
 
-# Set the "language" of Dokuwiki
-# Might overwrite user choice if language has been change directly in Dokuwiki admin panel
-# Should be enhance to avoid this. For now, it is easier to overwrite as there is no need to take care of existing configuration
-ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
+# Set the "admin" user
+ynh_replace_string "__YNH_ADMIN_USER__" "$admin"  "../conf/local.protected.php"
 
-# Set the "admin" user of Dokuwiki
-ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.php"
 
 # Copy Yunohost specific configuration
-cp ../conf/local.php $final_path/conf
+
+cp ../conf/local.protected.php $final_path/conf
+# This File cannot be modified directly by Dokuwiki, only by hand or by Yunohost
+# It will only be updated by Yunohost package or directly by adventurous users
+
+# Do not overwrite existing dokuwiki configuration as it could have user customization's and settings.
+# Create file if it does not exist
+if [ ! -f "$final_path/conf/local.php" ]; then
+
+	# Set the default "language" only when file does not exist beforehand
+	# Replace string in order to have a functionnal configuration file
+	ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
+
+	cp ../conf/local.php $final_path/conf
+fi
 
 # Do not overwrite existing ACL configuration file as it could have user customization's and settings.
 # Create file if it does not exist

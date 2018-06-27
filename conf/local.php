@@ -11,24 +11,3 @@
 
 /* Basic Settings */
 $conf['lang']        = '__YNH_LANGUAGE__';              //your language
-
-/* Authentication Settings */
-$conf['useacl']      = 1;                //Use Access Control Lists to restrict access?
-$conf['authtype']    = 'authldap';       //which authentication backend should be used
-$conf['passcrypt']   = 'sha1';           //Used crypt method (smd5,md5,sha1,ssha,crypt,mysql,my411)
-$conf['superuser']   = '__YNH_ADMIN_USER__'; //The admin can be user or @group or comma separated list user1,@group1,user2
-$conf['manager']     = '__YNH_ADMIN_USER__'; //The manager can be user or @group or comma separated list user1,@group1,user2
-
-/* LDAP Yunohost config */
-$conf['plugin']['authldap']['server']      = 'localhost';
-$conf['plugin']['authldap']['port']        = 389;
-$conf['plugin']['authldap']['version']     = 3;
-$conf['plugin']['authldap']['usertree']    = 'ou=users,dc=yunohost,dc=org';
-$conf['plugin']['authldap']['userfilter']  = '(&(uid=%{user})(objectClass=posixAccount))';
-# no groups
-#$conf['plugin']['authldap']['grouptree']   = 'ou=Group, dc=server, dc=tld';
-#$conf['plugin']['authldap']['groupfilter'] = '(&(objectClass=posixGroup)(|(gidNumber=%{gid})(memberUID=%{user})))'; 
-
-/* Advanced Settings */
-$conf['updatecheck'] = 0;                //automatically check for new releases?
-$conf['cssdatauri']  = 512;              //Maximum byte size of small images to embed into CSS, won't work on IE<8
