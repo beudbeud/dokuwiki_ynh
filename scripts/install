@@ -109,6 +109,16 @@ ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
 
 # Copy Yunohost specific configuration
 
+# Loading order of configuration files
+#
+# By default DokuWiki loads its configuration files in the following order:
+# 
+# 1. conf/dokuwiki.php
+# 2. conf/local.php
+# 3. conf/local.protected.php
+#
+# See https://www.dokuwiki.org/plugin:config#protecting_settings
+
 cp ../conf/local.protected.php $final_path/conf
 # This File cannot be modified directly by Dokuwiki, only by hand or by Yunohost
 # It will only be updated by Yunohost package or directly by adventurous users

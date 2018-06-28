@@ -19,7 +19,8 @@ domain=$(ynh_app_setting_get $app domain)
 path_url=$(ynh_app_setting_get $app path)
 admin=$(ynh_app_setting_get $app admin)
 is_public=$(ynh_app_setting_get $app is_public)
-language=$(ynh_app_setting_get $app language)
+# Not needed during upgrade as user might have change it since installation from Dokuwiki admin panel
+#language=$(ynh_app_setting_get $app language)
 final_path=$(ynh_app_setting_get $app final_path)
 
 #=================================================
@@ -52,6 +53,52 @@ fi
 if [ -z "$language" ]; then
 	language='en'
 	ynh_app_setting_set $app language $language
+fi
+
+
+# Yunohost specific configuration, if not exists
+
+# Previously, these settings were store a unique "dokuwiki.php"
+# Now, they are split in multiples files to ease upgrading process (separate Yunohost config from user config)
+
+# Loading order of configuration files
+#
+# By default DokuWiki loads its configuration files in the following order:
+# 
+# 1. conf/dokuwiki.php
+# 2. conf/local.php
+# 3. conf/local.protected.php
+#
+# See https://www.dokuwiki.org/plugin:config#protecting_settings
+
+
+# Configuration dedicated to Yunohost (LDAP and admin mainly)
+# Create file if it does not exist
+if [ ! -f "$final_path/conf/local.protected.php" ]; then
+	# Set the default "admin"
+	# Replace string in order to have a functionnal configuration file
+	ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.protected.php"
+
+	cp ../conf/local.protected.php $final_path/conf
+fi
+
+# Do not overwrite existing dokuwiki configuration as it could have user customization's and settings.
+# Cannot use helper "ynh_backup_if_checksum_is_different"
+# Create file if it does not exist
+if [ ! -f "$final_path/conf/local.php" ]; then
+	# Set the default "language" only when file does not exist beforehand
+	# Replace string in order to have a functionnal configuration file
+	ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
+
+	cp ../conf/local.php $final_path/conf
+fi
+
+# Do not overwrite existing ACL configuration file as it could have user customization's and settings.
+# Cannot use helper "ynh_backup_if_checksum_is_different"
+# Create file if it does not exist
+# See https://www.dokuwiki.org/acl#background_info
+if [ ! -f "$final_path/conf/acl.auth.php" ]; then
+	cp ../conf/acl.auth.php $final_path/conf
 fi
 
 #=================================================
@@ -113,33 +160,6 @@ if [ -d "${final_path}/data/media" ]; then
 	chown -R $app:root $final_path/{data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp}
 fi
 
-# Set the "admin" user if not done during installation
-# Do nothing otherwize
-ynh_replace_string "__YNH_ADMIN_USER__" "$admin"  "../conf/local.protected.php"
-
-
-# Copy Yunohost specific configuration
-
-# Do not overwrite existing dokuwiki configuration as it could have user customization's and settings.
-# Create file if it does not exist
-# Cannot use helper "ynh_backup_if_checksum_is_different"
-if [ ! -f "$final_path/conf/local.php" ]; then
-
-	# Set the default "language" only when file does not exist beforehand
-	# Replace string in order to have a functionnal configuration file
-	ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
-
-	cp ../conf/local.php $final_path/conf
-fi
-
-# Do not overwrite existing ACL configuration file as it could have user customization's and settings.
-# Create file if it does not exist
-# See https://www.dokuwiki.org/acl#background_info
-# Cannot use helper "ynh_backup_if_checksum_is_different"
-if [ ! -f "$final_path/conf/acl.auth.php" ]; then
-	cp ../conf/acl.auth.php $final_path/conf
-fi
-
 # Remove upgrade notification inside Dokuwiki's admin panel
 # See https://www.dokuwiki.org/update_check
 touch $final_path/doku.php
@@ -176,8 +196,12 @@ done
 
 #=================================================
 
-# Verify the checksum and backup the file if it's different
+# Verify if existing file needs to be upgraded by comparing it's size to new file from package
+# If different, do a backup of existing file and overwrite with new file
+# 
+# Safe here as this file is only used by Yunohost. Dokuwiki cannot modified it.
 ynh_backup_if_checksum_is_different "$final_path/conf/local.protected.php"
+
 # Recalculate and store the config file checksum into the app settings
 ynh_store_file_checksum "$final_path/conf/local.protected.php"
 
