@@ -64,7 +64,7 @@ fi
 # Loading order of configuration files
 #
 # By default DokuWiki loads its configuration files in the following order:
-# 
+#
 # 1. conf/dokuwiki.php
 # 2. conf/local.php
 # 3. conf/local.protected.php
@@ -99,6 +99,42 @@ fi
 # See https://www.dokuwiki.org/acl#background_info
 if [ ! -f "$final_path/conf/acl.auth.php" ]; then
 	cp ../conf/acl.auth.php $final_path/conf
+fi
+
+# For securing DokuWiki installation, create default files that will be writable in the "conf" folder.
+# Other files will be read ony and owned by root.
+# See https://www.dokuwiki.org/install:permissions
+
+# Create file if it does not exist
+if [ ! -f "$final_path/conf/local.protected.php" ]; then
+	# Set the default "admin"
+	# Replace string in order to have a functionnal configuration file
+	ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.protected.php"
+
+	cp ../conf/local.protected.php $final_path/conf
+fi
+
+# If file does not exists
+if [ ! -f "$final_path/conf/local.php.bak" ]; then
+	# if template exists
+	if [ -f "$final_path/conf/local.php.dist" ]; then
+		# Copy template to create default file
+		cp "$final_path/conf/local.php.dist" "$final_path/conf/local.php.bak"
+	fi
+fi
+
+if [ ! -f "$final_path/conf/users.auth.php" ]; then
+	if [ -f "$final_path/conf/users.auth.php.dist" ]; then
+		cp $final_path/conf/users.auth.php.dist $final_path/conf/users.auth.php
+	fi
+fi
+
+if [ ! -f "$final_path/conf/plugins.local.php" ]; then
+	cp ../conf/plugins.local.php $final_path/conf
+fi
+
+if [ ! -f "$final_path/conf/plugins.local.php.bak" ]; then
+	cp ../conf/plugins.local.php $final_path/conf/plugins.local.php.bak
 fi
 
 #=================================================
@@ -155,11 +191,6 @@ ynh_add_fpm_config
 # SPECIFIC UPGRADE
 #=================================================
 
-# TODO Taken from old "upgrade" script. Should check if it is needed and what it does
-if [ -d "${final_path}/data/media" ]; then
-	chown -R $app:root $final_path/{data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp}
-fi
-
 # Remove upgrade notification inside Dokuwiki's admin panel
 # See https://www.dokuwiki.org/update_check
 touch $final_path/doku.php
@@ -183,6 +214,7 @@ if [ -f "$final_path/data/deleted.files" ]; then
 	)
 fi
 
+# TODO Taken from old "upgrade" script. Should check if it is needed and what it does
 # Update all plugins
 for name_plugin in $(sudo -s cat $final_path/lib/plugins/*/plugin.info.txt | grep url | awk -F':' '{print $3}');
 do
@@ -222,20 +254,37 @@ ynh_store_file_checksum "$final_path/conf/local.protected.php"
 # SECURE FILES AND DIRECTORIES
 #=================================================
 
-# Files owned by dokuwiki can just read
+# Try to use "least privilege" to grant minimal access
+# For details, see https://www.dokuwiki.org/install:permissions
+
+# Files owned by DokuWiki can just read
 chown -R root: $final_path
 
-# except for conf, data, some data subfolders, and lib/plugin, where dokuwiki must have write permissions
-#TODO compare rights with install script !!!
-# Install script :
-#sudo chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
+# DokuWiki needs to write inside the "conf" folder. Do "DokuWiki" owner of the folder.
+chown $app:root $final_path/conf
 
-chown -R $app:root $final_path/{conf,data,lib/plugins,lib/tpl}
-chmod -R 700 $final_path/conf
-chmod -R 700 $final_path/data
-chmod -R 755 $final_path/lib/plugins
-chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
+# Do "DokuWiki" owner of onfiguration files that must be writable
+chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
+# Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
+# There are only files in the folder and there is sublevels. No need to use "find"
+chmod -R a+r $final_path/conf
 
+# Give write access to "data" and subfolders
+chown -R $app:root $final_path/data
+# Remove access to "other"
+chmod -R o-rwx $final_path/data
+
+# Allow the web admin panel to run, aka "Extension Manager"
+chown -R $app:root $final_path/lib/plugins
+# Allow to install templates
+chown -R $app:root $final_path/lib/tpl
+
+# Allow access to public assets like style sheets
+find $final_path/lib -type f -print0 | xargs -0 chmod 0644
+find $final_path/lib -type d -print0 | xargs -0 chmod 0755
+# Using "find" instead of "chmod -R 755" so files does not become executable too
+# chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
+# find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
 
 #=================================================
 # SETUP SSOWAT

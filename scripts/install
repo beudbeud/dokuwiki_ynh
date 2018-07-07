@@ -112,7 +112,7 @@ ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
 # Loading order of configuration files
 #
 # By default DokuWiki loads its configuration files in the following order:
-# 
+#
 # 1. conf/dokuwiki.php
 # 2. conf/local.php
 # 3. conf/local.protected.php
@@ -134,6 +134,33 @@ cp ../conf/local.php           $final_path/conf
 cp ../conf/acl.auth.php $final_path/conf
 
 #=================================================
+# CREATE DEFAULT FILES
+#=================================================
+
+# For securing DokuWiki installation, create default files that will be writable in the "conf" folder.
+# Other files will be read ony and owned by root.
+# See https://www.dokuwiki.org/install:permissions
+
+
+cp $final_path/conf/local.php.dist      $final_path/conf/local.php.bak
+cp $final_path/conf/users.auth.php.dist $final_path/conf/users.auth.php
+
+# There is no template .dist provided inside DokuWiki installation folder
+# Create "empty" files to be able to manage linux permissions
+# Files content is taken from an existing DokuWiki installation
+cp ../conf/plugins.local.php            $final_path/conf
+cp ../conf/plugins.local.php            $final_path/conf/plugins.local.php.bak
+
+# Create file if it does not exist
+if [ ! -f "$final_path/conf/local.protected.php" ]; then
+	# Set the default "admin"
+	# Replace string in order to have a functionnal configuration file
+	ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.protected.php"
+
+	cp ../conf/local.protected.php $final_path/conf
+fi
+
+#=================================================
 # STORE THE CHECKSUM OF THE CONFIG FILE
 #=================================================
 
@@ -149,15 +176,37 @@ ynh_store_file_checksum "$final_path/conf/acl.auth.php"
 # SECURE FILES AND DIRECTORIES
 #=================================================
 
-# Files owned by dokuwiki can just read
+# Try to use "least privilege" to grant minimal access
+# For details, see https://www.dokuwiki.org/install:permissions
+
+# Files owned by DokuWiki can just read
 chown -R root: $final_path
 
-# except for conf, data, some data subfolders, and lib/plugin, where www-data must have write permissions
-chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
-chmod -R 700 $final_path/conf
-chmod -R 700 $final_path/data
-chmod -R 755 $final_path/lib/plugins
-chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
+# DokuWiki needs to write inside the "conf" folder. Do "DokuWiki" owner of the folder.
+chown $app:root $final_path/conf
+
+# Do "DokuWiki" owner of onfiguration files that must be writable
+chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
+# Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
+# There are only files in the folder and there is sublevels. No need to use "find"
+chmod -R a+r $final_path/conf
+
+# Give write access to "data" and subfolders
+chown -R $app:root $final_path/data
+# Remove access to "other"
+chmod -R o-rwx $final_path/data
+
+# Allow the web admin panel to run, aka "Extension Manager"
+chown -R $app:root $final_path/lib/plugins
+# Allow to install templates
+chown -R $app:root $final_path/lib/tpl
+
+# Allow access to public assets like style sheets
+find $final_path/lib -type f -print0 | xargs -0 chmod 0644
+find $final_path/lib -type d -print0 | xargs -0 chmod 0755
+# Using "find" instead of "chmod -R 755" so files does not become executable too
+# chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
+# find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
 
 #=================================================
 # SETUP SSOWAT
