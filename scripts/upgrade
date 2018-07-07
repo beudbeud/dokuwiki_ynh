@@ -43,13 +43,13 @@ if [ -z $final_path ]; then
 fi
 
 # TODO Not sure if still needed ??
-# admin default value, if not set
+# admin default value, if not set
 if [ -z "$admin" ]; then
 	admin=$(sudo yunohost user list | grep 'username' -m1 | awk '{print $2}')
 	sudo ynh_app_setting_set $app is_public -v "$is_public"
 fi
 
-# language default value, if not set
+# language default value, if not set
 if [ -z "$language" ]; then
 	language='en'
 	ynh_app_setting_set $app language $language
@@ -82,7 +82,7 @@ if [ ! -f "$final_path/conf/local.protected.php" ]; then
 	cp ../conf/local.protected.php $final_path/conf
 fi
 
-# Do not overwrite existing dokuwiki configuration as it could have user customization's and settings.
+# Do not overwrite existing dokuwiki configuration as it could have user customization's and settings.
 # Cannot use helper "ynh_backup_if_checksum_is_different"
 # Create file if it does not exist
 if [ ! -f "$final_path/conf/local.php" ]; then
@@ -93,7 +93,7 @@ if [ ! -f "$final_path/conf/local.php" ]; then
 	cp ../conf/local.php $final_path/conf
 fi
 
-# Do not overwrite existing ACL configuration file as it could have user customization's and settings.
+# Do not overwrite existing ACL configuration file as it could have user customization's and settings.
 # Cannot use helper "ynh_backup_if_checksum_is_different"
 # Create file if it does not exist
 # See https://www.dokuwiki.org/acl#background_info
