@@ -137,6 +137,15 @@ if [ ! -f "$final_path/conf/plugins.local.php.bak" ]; then
 	cp ../conf/plugins.local.php $final_path/conf/plugins.local.php.bak
 fi
 
+
+if [ ! -f "$final_path/inc/preload.php" ]; then
+	# if template exists
+	if [ -f "$final_path/inc/preload.php.dist" ]; then
+		# Copy template to create default file
+		cp "$final_path/inc/preload.php.dist" "$final_path/inc/preload.php"
+	fi
+fi
+
 #=================================================
 # BACKUP BEFORE UPGRADE THEN ACTIVE TRAP
 #=================================================
@@ -260,14 +269,17 @@ ynh_store_file_checksum "$final_path/conf/local.protected.php"
 # Files owned by DokuWiki can just read
 chown -R root: $final_path
 
-# DokuWiki needs to write inside the "conf" folder. Do "DokuWiki" owner of the folder.
+# DokuWiki needs to write inside these folders. Do "DokuWiki" owner
 chown $app:root $final_path/conf
+chown $app:root $final_path/inc
 
-# Do "DokuWiki" owner of onfiguration files that must be writable
+# Do "DokuWiki" owner of configuration files that must be writable
 chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
+chown $app:root $final_path/inc/preload.php
 # Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
 # There are only files in the folder and there is sublevels. No need to use "find"
 chmod -R a+r $final_path/conf
+chmod -R a+r $final_path/inc
 
 # Give write access to "data" and subfolders
 chown -R $app:root $final_path/data
