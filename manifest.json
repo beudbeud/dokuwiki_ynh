@@ -3,7 +3,7 @@
     "id": "dokuwiki",
     "packaging_format": 1,
     "requirements": {
-        "yunohost": ">> 2.6.4"
+        "yunohost": ">> 2.7.14"
     },
     "description": {
         "en": "DokuWiki is a simple to use and highly versatile Open Source wiki software that doesn't require a database.",
