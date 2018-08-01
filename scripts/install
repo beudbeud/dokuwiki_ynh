@@ -1,7 +1,30 @@
 #!/bin/bash
 
-# Exit on command errors and treat unset variables as an error
-set -eu
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+#=================================================
+# MANAGE SCRIPT FAILURE
+#=================================================
+
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# RETRIEVE ARGUMENTS FROM THE MANIFEST
+#=================================================
+
+domain=$YNH_APP_ARG_DOMAIN
+path_url=$YNH_APP_ARG_PATH
+admin=$YNH_APP_ARG_ADMIN
+is_public=$YNH_APP_ARG_IS_PUBLIC
+language=$YNH_APP_ARG_LANGUAGE
 
 # This is a multi-instance app, meaning it can be installed several times independently
 # The id of the app as stated in the manifest is available as $YNH_APP_ID
@@ -13,82 +36,209 @@ set -eu
 # The app instance name is probably what you are interested the most, since this is
 # guaranteed to be unique. This is a good unique identifier to define installation path,
 # db names, ...
-# Retrieve arguments
-
-source .fonctions	# Loads the generic functions usually used in the script
-# Source app helpers
-source /usr/share/yunohost/helpers
-
-TRAP_ON	# Active trap for strop script if detect error.
-
-domain=$YNH_APP_ARG_DOMAIN
-path=$YNH_APP_ARG_PATH
-admin=$YNH_APP_ARG_ADMIN
-is_public=$YNH_APP_ARG_IS_PUBLIC
-
 app=$YNH_APP_INSTANCE_NAME
 
-CHECK_VAR "$app" "app name not set"
+#=================================================
+# CHECK IF THE APP CAN BE INSTALLED WITH THESE ARGS
+#=================================================
 
-CHECK_USER "$admin"
+final_path=/var/www/$app
+test ! -e "$final_path" || ynh_die "This path already contains a folder"
 
-CHECK_PATH
+# Normalize the url path syntax
+path_url=$(ynh_normalize_url_path $path_url)
 
-CHECK_DOMAINPATH
+# Check web path availability
+ynh_webpath_available $domain $path_url
+# Register (book) web path
+ynh_webpath_register $app $domain $path_url
 
-CHECK_FINALPATH
+#=================================================
+# STORE SETTINGS FROM MANIFEST
+#=================================================
 
-# Save app settings
 ynh_app_setting_set $app domain $domain
-ynh_app_setting_set $app path $path
+ynh_app_setting_set $app path $path_url
 ynh_app_setting_set $app admin $admin
 ynh_app_setting_set $app is_public $is_public
+ynh_app_setting_set $app language $language
 
-# Create system user dedicace for this app
+#=================================================
+# STANDARD MODIFICATIONS
+#=================================================
+# DOWNLOAD, CHECK AND UNPACK SOURCE
+#=================================================
+
+ynh_app_setting_set $app final_path $final_path
+# Download, check integrity, uncompress and patch the source from app.src
+ynh_setup_source "$final_path"
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+
+# Create a dedicated nginx config
+ynh_add_nginx_config
+
+#=================================================
+# CREATE DEDICATED USER
+#=================================================
+
+# Create a system user
 ynh_system_user_create $app
 
-# Modify dokuwiki conf
-sed -i "s@YNH_ADMIN_USER@$admin@g" ../conf/dokuwiki.php
+#=================================================
+# PHP-FPM CONFIGURATION
+#=================================================
 
-# Copy files to the right place
-sudo mkdir "$final_path"
-ynh_app_setting_set $app final_path $final_path
+# Create a dedicated php-fpm config
+ynh_add_fpm_config
 
-# Get source
-SETUP_SOURCE
+#=================================================
+# SPECIFIC SETUP
+#=================================================
+# CUSTOMIZE DOKUWIKI
+#=================================================
 
-sudo cp ../conf/dokuwiki.php $final_path/conf
-sudo cp ../conf/acl.auth.php $final_path/conf
+# Set the "admin" user
+ynh_replace_string "__YNH_ADMIN_USER__" "$admin"  "../conf/local.protected.php"
 
-# Files owned by dokuwiki can just read
-sudo chown -R root: $final_path
+# Set the "language"
+ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
 
-# except for conf, data, some data subfolders, and lib/plugin, where www-data must have write permissions
-sudo chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
-sudo chmod -R 700 $final_path/conf
-sudo chmod -R 700 $final_path/data
-sudo chmod -R 755 $final_path/lib/plugins
-sudo chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
 
-# Modify Nginx configuration file and copy it to Nginx conf directory
-sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
-sudo sed -i "s@__PATHTOCHANGE__@$path@g" /etc/nginx/conf.d/$domain.d/$app.conf
-sudo sed -i "s@__FINALPATH__@$final_path@g" /etc/nginx/conf.d/$domain.d/$app.conf
-sudo sed -i "s@__NAMETOCHANGE__@$app@g" /etc/nginx/conf.d/$domain.d/$app.conf
+# Copy Yunohost specific configuration
 
-if [ "$is_public" = "Yes" ];
+# Loading order of configuration files
+#
+# By default DokuWiki loads its configuration files in the following order:
+#
+# 1. conf/dokuwiki.php
+# 2. conf/local.php
+# 3. conf/local.protected.php
+#
+# See https://www.dokuwiki.org/plugin:config#protecting_settings
+
+cp ../conf/local.protected.php $final_path/conf
+# This File cannot be modified directly by Dokuwiki, only by hand or by Yunohost
+# It will only be updated by Yunohost package or directly by adventurous users
+
+cp ../conf/local.php           $final_path/conf
+# This file might be modified by dokuwiki admin panel or by plugins
+# It will not be modified by Yunohost in order to keep user settings
+
+# Restrict user rights by enforcing "read-only" mode for all users
+# See https://www.dokuwiki.org/acl#background_info
+# Default is "8"
+cp ../conf/acl.auth.php $final_path/conf
+
+#=================================================
+# CREATE DEFAULT FILES
+#=================================================
+
+# For securing DokuWiki installation, create default files that will be writable in the "conf" folder.
+# Other files will be read ony and owned by root.
+# See https://www.dokuwiki.org/install:permissions
+
+
+cp $final_path/conf/local.php.dist      $final_path/conf/local.php.bak
+cp $final_path/conf/users.auth.php.dist $final_path/conf/users.auth.php
+
+cp $final_path/inc/preload.php.dist     $final_path/inc/preload.php
+# This file might be used by plugins like https://www.dokuwiki.org/plugin:siteexport
+# Create it to be more "user friendly" as over the top security is not the main goal here
+# This file could be use for bad behaviour.
+# See https://www.dokuwiki.org/devel:preload?s[]=preload
+
+# There is no template .dist provided inside DokuWiki installation folder
+# Create "empty" files to be able to manage linux permissions
+# Files content is taken from an existing DokuWiki installation
+cp ../conf/plugins.local.php            $final_path/conf
+cp ../conf/plugins.local.php            $final_path/conf/plugins.local.php.bak
+
+# Create file if it does not exist
+if [ ! -f "$final_path/conf/local.protected.php" ]; then
+	# Set the default "admin"
+	# Replace string in order to have a functionnal configuration file
+	ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.protected.php"
+
+	cp ../conf/local.protected.php $final_path/conf
+fi
+
+#=================================================
+# STORE THE CHECKSUM OF THE CONFIG FILE
+#=================================================
+
+# Calculate and store the config file checksum into the app settings
+ynh_store_file_checksum "$final_path/conf/local.protected.php"
+ynh_store_file_checksum "$final_path/conf/local.php"
+ynh_store_file_checksum "$final_path/conf/acl.auth.php"
+#=================================================
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# SECURE FILES AND DIRECTORIES
+#=================================================
+
+# Try to use "least privilege" to grant minimal access
+# For details, see https://www.dokuwiki.org/install:permissions
+
+# Files owned by DokuWiki can just read
+chown -R root: $final_path
+
+# DokuWiki needs to write inside these folders. Do "DokuWiki" owner
+chown $app:root $final_path/conf
+chown $app:root $final_path/inc
+
+# Do "DokuWiki" owner of configuration files that must be writable
+chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
+# Usefull for some plugins like https://www.dokuwiki.org/plugin:siteexport
+# See https://www.dokuwiki.org/devel:preload
+chown $app:root $final_path/inc/preload.php
+# Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
+# There are only files in the folder and there is sublevels. No need to use "find"
+chmod -R a+r $final_path/conf
+chmod -R a+r $final_path/inc
+
+# Give write access to "data" and subfolders
+chown -R $app:root $final_path/data
+# Remove access to "other"
+chmod -R o-rwx $final_path/data
+
+# Allow the web admin panel to run, aka "Extension Manager"
+chown -R $app:root $final_path/lib/plugins
+# Allow to install templates
+chown -R $app:root $final_path/lib/tpl
+
+# Allow access to public assets like style sheets
+find $final_path/lib -type f -print0 | xargs -0 chmod 0644
+find $final_path/lib -type d -print0 | xargs -0 chmod 0755
+# Using "find" instead of "chmod -R 755" so files does not become executable too
+# chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
+# find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
+
+#=================================================
+# SETUP SSOWAT
+#=================================================
+
+# Not needed as no skipped_uris have been added before.
+# Example : "ynh_app_setting_set $app skipped_uris ..."
+# See https://github.com/YunoHost-Apps/dokuwiki_ynh/pull/37 for explanation
+#if [ $is_public -eq 0 ]
+#then	# Remove the public access
+#	ynh_app_setting_delete $app skipped_uris
+#fi
+
+# Make app public if necessary
+if [ $is_public -eq 1 ]
 then
-	sudo sed -i "s@#--PRIVATE--@@g" /etc/nginx/conf.d/$domain.d/$app.conf
+	# unprotected_uris allows SSO credentials to be passed anyway.
+	ynh_app_setting_set $app unprotected_uris "/"
 fi
 
-# Create the php-fpm pool config
-POOL_FPM
+#=================================================
+# RELOAD NGINX
+#=================================================
 
-# If app is public, add url to SSOWat conf as skipped_uris
-if [[ $is_public -eq 1 ]]; then
-  # unprotected_uris allows SSO credentials to be passed anyway.
-  ynh_app_setting_set "$app" unprotected_uris "/"
-fi
-
-# Reload Nginx
-sudo systemctl reload nginx
+systemctl reload nginx
