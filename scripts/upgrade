@@ -233,20 +233,17 @@ done
 # LDAP Configuration
 #=================================================
 
-# Verify if existing file needs to be upgraded by comparing it's size to new file from package
-# If different, do a backup of existing file and overwrite with new file
-#
-# Safe here as this file is only used by Yunohost. Dokuwiki cannot modified it.
+### Verify the checksum of a file, stored by `ynh_store_file_checksum` in the install script.
+### And create a backup of this file if the checksum is different. So the file will be backed up if the admin had modified it.
 ynh_backup_if_checksum_is_different "$final_path/conf/local.protected.php"
 
+# Always overwrite local file with the one from package.
 cp ../conf/local.protected.php $final_path/conf
-# This File cannot be modified directly by Dokuwiki, only by hand or by Yunohost
-# It will only be updated by Yunohost package or directly by adventurous users
 
 # Set the "admin" user
-ynh_replace_string "__YNH_ADMIN_USER__" "$admin"  "../conf/local.protected.php"
+ynh_replace_string "__YNH_ADMIN_USER__" "$admin"  "$final_path/conf/local.protected.php"
 
-# Recalculate and store the config file checksum into the app settings
+# Recalculate and store the checksum of the file for the next upgrade.
 ynh_store_file_checksum "$final_path/conf/local.protected.php"
 
 #=================================================
