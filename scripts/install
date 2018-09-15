@@ -163,8 +163,9 @@ cp ../conf/plugins.local.php            $final_path/conf/plugins.local.php.bak
 
 # Calculate and store the config file checksum into the app settings
 ynh_store_file_checksum "$final_path/conf/local.protected.php"
-ynh_store_file_checksum "$final_path/conf/local.php"
-ynh_store_file_checksum "$final_path/conf/acl.auth.php"
+### Files can be modified by user, no need to store checksum as they cannot be overwritten safely by package
+#ynh_store_file_checksum "$final_path/conf/local.php"
+#ynh_store_file_checksum "$final_path/conf/acl.auth.php"
 #=================================================
 
 #=================================================

@@ -83,7 +83,6 @@ if [ ! -f "$final_path/conf/local.protected.php" ]; then
 fi
 
 # Do not overwrite existing dokuwiki configuration as it could have user customization's and settings.
-# Cannot use helper "ynh_backup_if_checksum_is_different"
 # Create file if it does not exist
 if [ ! -f "$final_path/conf/local.php" ]; then
 	cp ../conf/local.php $final_path/conf
@@ -93,7 +92,6 @@ if [ ! -f "$final_path/conf/local.php" ]; then
 fi
 
 # Do not overwrite existing ACL configuration file as it could have user customization's and settings.
-# Cannot use helper "ynh_backup_if_checksum_is_different"
 # Create file if it does not exist
 # See https://www.dokuwiki.org/acl#background_info
 if [ ! -f "$final_path/conf/acl.auth.php" ]; then
@@ -264,6 +262,8 @@ chown $app:root $final_path/inc
 
 # Do "DokuWiki" owner of configuration files that must be writable
 chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
+# Usefull for some plugins like https://www.dokuwiki.org/plugin:siteexport
+# See https://www.dokuwiki.org/devel:preload
 chown $app:root $final_path/inc/preload.php
 # Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
 # There are only files in the folder and there is sublevels. No need to use "find"
