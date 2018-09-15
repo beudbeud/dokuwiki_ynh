@@ -157,14 +157,6 @@ cp $final_path/inc/preload.php.dist     $final_path/inc/preload.php
 cp ../conf/plugins.local.php            $final_path/conf
 cp ../conf/plugins.local.php            $final_path/conf/plugins.local.php.bak
 
-# Create file if it does not exist
-if [ ! -f "$final_path/conf/local.protected.php" ]; then
-	cp ../conf/local.protected.php $final_path/conf
-
-	# Set the default "admin"
-	ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "$final_path/conf/local.protected.php"
-fi
-
 #=================================================
 # STORE THE CHECKSUM OF THE CONFIG FILE
 #=================================================
