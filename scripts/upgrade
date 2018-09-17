@@ -215,7 +215,7 @@ fi
 
 # TODO Taken from old "upgrade" script. Should check if it is needed and what it does
 # Update all plugins
-for name_plugin in $(sudo -s cat $final_path/lib/plugins/*/plugin.info.txt | grep url | awk -F':' '{print $3}');
+for name_plugin in $(sudo -s cat $final_path/lib/plugins/*/plugin.info.txt | grep url | awk -F ':' '{print $3}');
 do
 	# Get a official plugin for dokuwiki, not update a no-official
 	sudo wget -nv --quiet "https://github.com/splitbrain/dokuwiki-plugin-${name_plugin}/zipball/master" -O "${name_plugin}.zip" -o /dev/null || true
