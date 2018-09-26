@@ -60,16 +60,42 @@ ynh_system_user_create $app
 # RESTORE USER RIGHTS
 #=================================================
 
-# Restore permissions on app files
+# Try to use "least privilege" to grant minimal access
+# For details, see https://www.dokuwiki.org/install:permissions
+
+# Files owned by DokuWiki can just read
 chown -R root: $final_path
 
-# Restore permissions same as from the 'install' script
-# except for conf, data, some data subfolders, and lib/plugin, where www-data must have write permissions
-chown -R $app:root $final_path/{conf,data,data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp,lib/plugins,lib/tpl}
-chmod -R 700 $final_path/conf
-chmod -R 700 $final_path/data
-chmod -R 755 $final_path/lib/plugins
-chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
+# DokuWiki needs to write inside these folders. Do "DokuWiki" owner
+chown $app:root $final_path/conf
+chown $app:root $final_path/inc
+
+# Do "DokuWiki" owner of configuration files that must be writable
+chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
+# Useful for some plugins like https://www.dokuwiki.org/plugin:siteexport
+# See https://www.dokuwiki.org/devel:preload
+chown $app:root $final_path/inc/preload.php
+# Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
+# There are only files in the folder and there are no sublevels. No need to use "find"
+chmod -R a+r $final_path/conf
+chmod -R a+r $final_path/inc
+
+# Give write access to "data" and subfolders
+chown -R $app:root $final_path/data
+# Remove access to "other"
+chmod -R o-rwx $final_path/data
+
+# Allow the web admin panel to run, aka "Extension Manager"
+chown -R $app:root $final_path/lib/plugins
+# Allow to install templates
+chown -R $app:root $final_path/lib/tpl
+
+# Allow access to public assets like style sheets
+find $final_path/lib -type f -print0 | xargs -0 chmod 0644
+find $final_path/lib -type d -print0 | xargs -0 chmod 0755
+# Using "find" instead of "chmod -R 755" so files does not become executable too
+# chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
+# find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
 
 #=================================================
 # RESTORE THE PHP-FPM CONFIGURATION

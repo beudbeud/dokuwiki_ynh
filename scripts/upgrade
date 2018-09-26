@@ -56,6 +56,7 @@ if [ -z "$language" ]; then
 fi
 
 
+
 # Yunohost specific configuration, if not exists
 
 # Previously, these settings were store a unique "dokuwiki.php"
@@ -75,44 +76,33 @@ fi
 # Configuration dedicated to Yunohost (LDAP and admin mainly)
 # Create file if it does not exist
 if [ ! -f "$final_path/conf/local.protected.php" ]; then
-	# Set the default "admin"
-	# Replace string in order to have a functionnal configuration file
-	ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.protected.php"
-
 	cp ../conf/local.protected.php $final_path/conf
+
+	# Set the default "admin"
+	ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "$final_path/conf/local.protected.php"
 fi
 
 # Do not overwrite existing dokuwiki configuration as it could have user customization's and settings.
-# Cannot use helper "ynh_backup_if_checksum_is_different"
 # Create file if it does not exist
 if [ ! -f "$final_path/conf/local.php" ]; then
-	# Set the default "language" only when file does not exist beforehand
-	# Replace string in order to have a functionnal configuration file
-	ynh_replace_string "__YNH_LANGUAGE__" "$language" "../conf/local.php"
-
 	cp ../conf/local.php $final_path/conf
+
+	# Set the default "language"
+	ynh_replace_string "__YNH_LANGUAGE__" "$language" "$final_path/conf/local.php"
 fi
 
 # Do not overwrite existing ACL configuration file as it could have user customization's and settings.
-# Cannot use helper "ynh_backup_if_checksum_is_different"
 # Create file if it does not exist
 # See https://www.dokuwiki.org/acl#background_info
 if [ ! -f "$final_path/conf/acl.auth.php" ]; then
 	cp ../conf/acl.auth.php $final_path/conf
 fi
 
+
+
 # For securing DokuWiki installation, create default files that will be writable in the "conf" folder.
 # Other files will be read ony and owned by root.
 # See https://www.dokuwiki.org/install:permissions
-
-# Create file if it does not exist
-if [ ! -f "$final_path/conf/local.protected.php" ]; then
-	# Set the default "admin"
-	# Replace string in order to have a functionnal configuration file
-	ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "../conf/local.protected.php"
-
-	cp ../conf/local.protected.php $final_path/conf
-fi
 
 # If file does not exists
 if [ ! -f "$final_path/conf/local.php.bak" ]; then
@@ -225,7 +215,7 @@ fi
 
 # TODO Taken from old "upgrade" script. Should check if it is needed and what it does
 # Update all plugins
-for name_plugin in $(sudo -s cat $final_path/lib/plugins/*/plugin.info.txt | grep url | awk -F':' '{print $3}');
+for name_plugin in $(sudo -s cat $final_path/lib/plugins/*/plugin.info.txt | grep url | awk -F ':' '{print $3}');
 do
 	# Get a official plugin for dokuwiki, not update a no-official
 	sudo wget -nv --quiet "https://github.com/splitbrain/dokuwiki-plugin-${name_plugin}/zipball/master" -O "${name_plugin}.zip" -o /dev/null || true
@@ -241,20 +231,17 @@ done
 # LDAP Configuration
 #=================================================
 
-# Verify if existing file needs to be upgraded by comparing it's size to new file from package
-# If different, do a backup of existing file and overwrite with new file
-#
-# Safe here as this file is only used by Yunohost. Dokuwiki cannot modified it.
+### Verify the checksum of a file, stored by `ynh_store_file_checksum` in the install script.
+### And create a backup of this file if the checksum is different. So the file will be backed up if the admin had modified it.
 ynh_backup_if_checksum_is_different "$final_path/conf/local.protected.php"
 
-# Set the "admin" user
-ynh_replace_string "__YNH_ADMIN_USER__" "$admin"  "../conf/local.protected.php"
-
+# Always overwrite local file with the one from package.
 cp ../conf/local.protected.php $final_path/conf
-# This File cannot be modified directly by Dokuwiki, only by hand or by Yunohost
-# It will only be updated by Yunohost package or directly by adventurous users
 
-# Recalculate and store the config file checksum into the app settings
+# Set the "admin" user
+ynh_replace_string "__YNH_ADMIN_USER__" "$admin"  "$final_path/conf/local.protected.php"
+
+# Recalculate and store the checksum of the file for the next upgrade.
 ynh_store_file_checksum "$final_path/conf/local.protected.php"
 
 #=================================================
@@ -275,6 +262,8 @@ chown $app:root $final_path/inc
 
 # Do "DokuWiki" owner of configuration files that must be writable
 chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
+# Useful for some plugins like https://www.dokuwiki.org/plugin:siteexport
+# See https://www.dokuwiki.org/devel:preload
 chown $app:root $final_path/inc/preload.php
 # Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
 # There are only files in the folder and there is sublevels. No need to use "find"
