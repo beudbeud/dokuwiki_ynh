@@ -1,23 +1,52 @@
 #!/bin/bash
 
-# Exit on command errors and treat unset variables as an error
-set -eu
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
 
-# Get multi-instances specific variables
-app=$YNH_APP_INSTANCE_NAME
-
-# Source app helpers
+source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
 
-# Retrieve app settings
-domain=$(ynh_app_setting_get "$app" domain)
+#=================================================
+# MANAGE SCRIPT FAILURE
+#=================================================
 
-# Copy the app files
-final_path="/var/www/${app}"
-ynh_backup "$final_path" "sources" 1
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
 
-# Copy the nginx conf files
-ynh_backup "/etc/nginx/conf.d/${domain}.d/${app}.conf" "nginx.conf"
-# Copy the php-fpm conf files
-ynh_backup "/etc/php5/fpm/pool.d/${app}.conf" "php-fpm.conf"
-ynh_backup "/etc/php5/fpm/conf.d/20-${app}.ini" "php-fpm.ini"
+#=================================================
+# LOAD SETTINGS
+#=================================================
+
+app=$YNH_APP_INSTANCE_NAME
+
+final_path=$(ynh_app_setting_get $app final_path)
+domain=$(ynh_app_setting_get $app domain)
+
+#=================================================
+# STANDARD BACKUP STEPS
+#=================================================
+# BACKUP THE APP MAIN DIR
+#=================================================
+
+ynh_backup "$final_path"
+
+#=================================================
+# BACKUP THE NGINX CONFIGURATION
+#=================================================
+
+ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf"
+
+#=================================================
+# BACKUP THE PHP-FPM CONFIGURATION
+#=================================================
+
+ynh_backup "/etc/php5/fpm/pool.d/$app.conf"
+ynh_backup "/etc/php5/fpm/conf.d/20-$app.ini"
+
+#=================================================
+# SPECIFIC BACKUP
+#=================================================
+

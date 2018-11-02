@@ -1,69 +1,120 @@
 #!/bin/bash
-# This restore script is adapted to Yunohost >=2.4
 
-# Exit on command errors and treat unset variables as an error
-set -eu
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
 
-# The parameter $2 is the id of the app instance ex: ynhexample__2
-app=$YNH_APP_INSTANCE_NAME
-
-if [ ! -e .fonctions ]; then
-	# Get file fonction if not been to the current directory
-	sudo cp ../settings/scripts/.fonctions ./.fonctions
-	sudo chmod a+rx .fonctions
-fi
-# Loads the generic functions usually used in the script
-source .fonctions
-# Source app helpers
+source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
 
-# Get old parameter of the app
+#=================================================
+# MANAGE SCRIPT FAILURE
+#=================================================
+
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# LOAD SETTINGS
+#=================================================
+
+app=$YNH_APP_INSTANCE_NAME
+
 domain=$(ynh_app_setting_get $app domain)
-path=$(ynh_app_setting_get $app path)
-is_public=$(ynh_app_setting_get $app is_public)
+path_url=$(ynh_app_setting_get $app path)
+final_path=$(ynh_app_setting_get $app final_path)
 
-# Check domain/path availability
-sudo yunohost app checkurl "${domain}${path}" -a "$app" \
-    || ynh_die "Path not available: ${domain}${path}"
+#=================================================
+# CHECK IF THE APP CAN BE RESTORED
+#=================================================
 
-# Check $final_path
-final_path="/var/www/${app}"
-if [ -d $final_path ]; then
-	ynh_die "There is already a directory: $final_path"
-fi
+ynh_webpath_available $domain $path_url \
+	|| ynh_die "Path not available: ${domain}${path_url}"
+test ! -d $final_path \
+	|| ynh_die "There is already a directory: $final_path "
 
-# Check configuration files nginx
-nginx_conf="/etc/nginx/conf.d/${domain}.d/${app}.conf"
-if [ -f $nginx_conf ]; then
-	ynh_die "The NGINX configuration already exists at '${nginx_conf}'. You should safely delete it before restoring this app."
-fi
-# Check configuration files php-fpm
-phpfpm_conf="/etc/php5/fpm/pool.d/${app}.conf"
-if [ -f $phpfpm_conf ]; then 
-	ynh_die "The PHP FPM configuration already exists at '${phpfpm_conf}'. You should safely delete it before restoring this app."
-fi
+#=================================================
+# STANDARD RESTORATION STEPS
+#=================================================
+# RESTORE THE NGINX CONFIGURATION
+#=================================================
 
-phpfpm_ini="/etc/php5/fpm/conf.d/20-${app}.ini"
-if [ -f $phpfpm_ini ]; then
-	ynh_die "The PHP FPM INI configuration already exists at '${phpfpm_ini}'. You should safely delete it before restoring this app."
-fi
+ynh_restore_file "/etc/nginx/conf.d/$domain.d/$app.conf"
 
-# Create system user dedicace for this app
+#=================================================
+# RESTORE THE APP MAIN DIR
+#=================================================
+
+ynh_restore_file "$final_path"
+
+#=================================================
+# RECREATE THE DEDICATED USER
+#=================================================
+
+# Create the dedicated user (if not existing)
 ynh_system_user_create $app
 
- # Restore sources & data
-sudo cp -a ./sources "${final_path}"
+#=================================================
+# RESTORE USER RIGHTS
+#=================================================
 
-# Set permissions
-sudo chown -R $app: "${final_path}"
+# Try to use "least privilege" to grant minimal access
+# For details, see https://www.dokuwiki.org/install:permissions
 
-# Restore nginx configuration files
-sudo cp -a ./nginx.conf   "${nginx_conf}"
-# Restore php-fpm configuration files
-sudo cp -a ./php-fpm.conf "${phpfpm_conf}"
-sudo cp -a ./php-fpm.ini "${phpfpm_ini}"
+# Files owned by DokuWiki can just read
+chown -R root: $final_path
 
-# Reload services
-sudo systemctl reload php5-fpm
-sudo systemctl reload nginx
-sudo yunohost app ssowatconf
+# DokuWiki needs to write inside these folders. Do "DokuWiki" owner
+chown $app:root $final_path/conf
+chown $app:root $final_path/inc
+
+# Do "DokuWiki" owner of configuration files that must be writable
+chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
+# Useful for some plugins like https://www.dokuwiki.org/plugin:siteexport
+# See https://www.dokuwiki.org/devel:preload
+chown $app:root $final_path/inc/preload.php
+# Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
+# There are only files in the folder and there are no sublevels. No need to use "find"
+chmod -R a+r $final_path/conf
+chmod -R a+r $final_path/inc
+
+# Give write access to "data" and subfolders
+chown -R $app:root $final_path/data
+# Remove access to "other"
+chmod -R o-rwx $final_path/data
+
+# Allow the web admin panel to run, aka "Extension Manager"
+chown -R $app:root $final_path/lib/plugins
+# Allow to install templates
+chown -R $app:root $final_path/lib/tpl
+
+# Allow access to public assets like style sheets
+find $final_path/lib -type f -print0 | xargs -0 chmod 0644
+find $final_path/lib -type d -print0 | xargs -0 chmod 0755
+# Using "find" instead of "chmod -R 755" so files does not become executable too
+# chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
+# find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
+
+#=================================================
+# RESTORE THE PHP-FPM CONFIGURATION
+#=================================================
+
+ynh_restore_file "/etc/php5/fpm/pool.d/$app.conf"
+ynh_restore_file "/etc/php5/fpm/conf.d/20-$app.ini"
+
+#=================================================
+# SPECIFIC RESTORATION
+#=================================================
+
+
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# RELOAD NGINX AND PHP-FPM
+#=================================================
+
+systemctl reload php5-fpm
+systemctl reload nginx

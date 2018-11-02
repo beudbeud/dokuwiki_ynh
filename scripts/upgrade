@@ -1,128 +1,309 @@
 #!/bin/bash
 
-# Exit on command errors and treat unset variables as an error
-set -eu
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
 
-if [ ! -e .fonctions ]; then
-	# Get file fonction if not been to the current directory
-	sudo cp ../settings/scripts/.fonctions ./.fonctions
-	sudo chmod a+rx .fonctions
-fi
-# Loads the generic functions usually used in the script
-source .fonctions
-# Source app helpers
+source _common.sh
 source /usr/share/yunohost/helpers
 
-# This is a multi-instance app, meaning it can be installed several times independently
-# The id of the app as stated in the manifest is available as $YNH_APP_ID
-# The instance number is available as $YNH_APP_INSTANCE_NUMBER (equals "1", "2", ...)
-# The app instance name is available as $YNH_APP_INSTANCE_NAME
-#    - the first time the app is installed, YNH_APP_INSTANCE_NAME = ynhexample
-#    - the second time the app is installed, YNH_APP_INSTANCE_NAME = ynhexample__2
-#    - ynhexample__{N} for the subsequent installations, with N=3,4, ...
-# The app instance name is probably what you are interested the most, since this is
-# guaranteed to be unique. This is a good unique identifier to define installation path,
-# db names, ...
+#=================================================
+# LOAD SETTINGS
+#=================================================
+
 app=$YNH_APP_INSTANCE_NAME
 
-# Retrieve app settings
 domain=$(ynh_app_setting_get $app domain)
-path=$(ynh_app_setting_get $app path)
+path_url=$(ynh_app_setting_get $app path)
 admin=$(ynh_app_setting_get $app admin)
 is_public=$(ynh_app_setting_get $app is_public)
-multisite=$(ynh_app_setting_get $app multisite)
+# Not needed during upgrade as user might have change it since installation from Dokuwiki admin panel
+#language=$(ynh_app_setting_get $app language)
+final_path=$(ynh_app_setting_get $app final_path)
 
-# Remove trailing slash to path
-path=${path%/}
-#force location to be / or /foo
-location=${path:-/}
+#=================================================
+# ENSURE DOWNWARD COMPATIBILITY
+#=================================================
 
-# admin default value, if not set
-if [ -z "$admin" ];
-then
+# Fix is_public as a boolean value
+if [ "$is_public" = "Yes" ]; then
+	ynh_app_setting_set $app is_public 1
+	is_public=1
+elif [ "$is_public" = "No" ]; then
+	ynh_app_setting_set $app is_public 0
+	is_public=0
+fi
+
+# If final_path doesn't exist, create it
+if [ -z $final_path ]; then
+	final_path=/var/www/$app
+	ynh_app_setting_set $app final_path $final_path
+fi
+
+# TODO Not sure if still needed ??
+# admin default value, if not set
+if [ -z "$admin" ]; then
 	admin=$(sudo yunohost user list | grep 'username' -m1 | awk '{print $2}')
 	sudo ynh_app_setting_set $app is_public -v "$is_public"
 fi
 
-# Create system user dedicace for this app
+# language default value, if not set
+if [ -z "$language" ]; then
+	language='en'
+	ynh_app_setting_set $app language $language
+fi
+
+
+
+# Yunohost specific configuration, if not exists
+
+# Previously, these settings were store a unique "dokuwiki.php"
+# Now, they are split in multiples files to ease upgrading process (separate Yunohost config from user config)
+
+# Loading order of configuration files
+#
+# By default DokuWiki loads its configuration files in the following order:
+#
+# 1. conf/dokuwiki.php
+# 2. conf/local.php
+# 3. conf/local.protected.php
+#
+# See https://www.dokuwiki.org/plugin:config#protecting_settings
+
+
+# Configuration dedicated to Yunohost (LDAP and admin mainly)
+# Create file if it does not exist
+if [ ! -f "$final_path/conf/local.protected.php" ]; then
+	cp ../conf/local.protected.php $final_path/conf
+
+	# Set the default "admin"
+	ynh_replace_string "__YNH_ADMIN_USER__" "$admin" "$final_path/conf/local.protected.php"
+fi
+
+# Do not overwrite existing dokuwiki configuration as it could have user customization's and settings.
+# Create file if it does not exist
+if [ ! -f "$final_path/conf/local.php" ]; then
+	cp ../conf/local.php $final_path/conf
+
+	# Set the default "language"
+	ynh_replace_string "__YNH_LANGUAGE__" "$language" "$final_path/conf/local.php"
+fi
+
+# Do not overwrite existing ACL configuration file as it could have user customization's and settings.
+# Create file if it does not exist
+# See https://www.dokuwiki.org/acl#background_info
+if [ ! -f "$final_path/conf/acl.auth.php" ]; then
+	cp ../conf/acl.auth.php $final_path/conf
+fi
+
+
+
+# For securing DokuWiki installation, create default files that will be writable in the "conf" folder.
+# Other files will be read ony and owned by root.
+# See https://www.dokuwiki.org/install:permissions
+
+# If file does not exists
+if [ ! -f "$final_path/conf/local.php.bak" ]; then
+	# if template exists
+	if [ -f "$final_path/conf/local.php.dist" ]; then
+		# Copy template to create default file
+		cp "$final_path/conf/local.php.dist" "$final_path/conf/local.php.bak"
+	fi
+fi
+
+if [ ! -f "$final_path/conf/users.auth.php" ]; then
+	if [ -f "$final_path/conf/users.auth.php.dist" ]; then
+		cp $final_path/conf/users.auth.php.dist $final_path/conf/users.auth.php
+	fi
+fi
+
+if [ ! -f "$final_path/conf/plugins.local.php" ]; then
+	cp ../conf/plugins.local.php $final_path/conf
+fi
+
+if [ ! -f "$final_path/conf/plugins.local.php.bak" ]; then
+	cp ../conf/plugins.local.php $final_path/conf/plugins.local.php.bak
+fi
+
+
+if [ ! -f "$final_path/inc/preload.php" ]; then
+	# if template exists
+	if [ -f "$final_path/inc/preload.php.dist" ]; then
+		# Copy template to create default file
+		cp "$final_path/inc/preload.php.dist" "$final_path/inc/preload.php"
+	fi
+fi
+
+#=================================================
+# BACKUP BEFORE UPGRADE THEN ACTIVE TRAP
+#=================================================
+
+# Backup the current version of the app
+ynh_backup_before_upgrade
+ynh_clean_setup () {
+	# restore it if the upgrade fails
+	ynh_restore_upgradebackup
+}
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# CHECK THE PATH
+#=================================================
+
+# Normalize the URL path syntax
+path_url=$(ynh_normalize_url_path $path_url)
+
+#=================================================
+# STANDARD UPGRADE STEPS
+#=================================================
+# DOWNLOAD, CHECK AND UNPACK SOURCE
+#=================================================
+
+# Download, check integrity, uncompress and patch the source from app.src
+ynh_setup_source "$final_path"
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+
+# Create a dedicated nginx config
+ynh_add_nginx_config
+
+#=================================================
+# CREATE DEDICATED USER
+#=================================================
+
+# Create a system user
 ynh_system_user_create $app
 
-# Modify dokuwiki conf
-sed -i "s@YNH_ADMIN_USER@$admin@g" ../conf/dokuwiki.php
+#=================================================
+# PHP-FPM CONFIGURATION
+#=================================================
 
-# Copy files to the right place
-final_path=/var/www/$app
-sudo mkdir -p $final_path
+# Create a dedicated php-fpm config
+ynh_add_fpm_config
 
-# Get source
-SETUP_SOURCE
+#=================================================
+# SPECIFIC UPGRADE
+#=================================================
 
-sudo cp ../conf/dokuwiki.php $final_path/conf
-
-# Do not override ACL configuration file
-if [ ! -f "$final_path/conf/acl.auth.php" ]; then
-	sudo cp ../conf/acl.auth.php $final_path/conf
-fi
-
-# Remove upgrade notification
+# Remove upgrade notification inside Dokuwiki's admin panel
 # See https://www.dokuwiki.org/update_check
-sudo touch $final_path/doku.php
+touch $final_path/doku.php
 
-# Remove deleted files
+# Remove files not used anymore after upgrade
 # See https://www.dokuwiki.org/install:unused_files
-if [ -f "../sources/data/deleted.files" ]; then
-	grep -Ev '^($|#)' ../sources/data/deleted.files | xargs -I {} sudo rm -vrf $final_path/{}
+if [ -f "$final_path/data/deleted.files" ]; then
+
+	# Use a "sub process" to start a new shell to run these commands
+	# Allow to use only one "cd" and to be more efficent
+	(
+		# Move to the dokuwiki installation folder so the "official" commands can be used without adaptation
+		cd $final_path
+
+		# This command could not remove directory
+		#grep -Ev '^($|#)' data/deleted.files | xargs -n 1 rm -vf
+		# => "rm: cannot remove 'vendor/easybook/geshi': Is a directory"
+
+		# That one works as expected
+		grep -Ev '^($|#)' data/deleted.files | xargs -n 1 rm -fr
+	)
 fi
 
-# Change owner for all plugins
-sudo chmod -R 755 $final_path/lib/plugins
-
+# TODO Taken from old "upgrade" script. Should check if it is needed and what it does
 # Update all plugins
-for name_plugin in $(sudo -s cat $final_path/lib/plugins/*/plugin.info.txt | grep url | awk -F':' '{print $3}');
+for name_plugin in $(sudo -s cat $final_path/lib/plugins/*/plugin.info.txt | grep url | awk -F ':' '{print $3}');
 do
-		# Get a official plugin for dokuwiki, not update a no-official
-		sudo wget -nv --quiet "https://github.com/splitbrain/dokuwiki-plugin-${name_plugin}/zipball/master" -O "${name_plugin}.zip" -o /dev/null || true
-		if [ -s "${name_plugin}.zip" ]; then
-			sudo unzip ${name_plugin}.zip
-			sudo cp -a splitbrain-dokuwiki-plugin-${name_plugin}*/. "${final_path}/lib/plugins/${name_plugin}/"
-		fi
+	# Get a official plugin for dokuwiki, not update a no-official
+	sudo wget -nv --quiet "https://github.com/splitbrain/dokuwiki-plugin-${name_plugin}/zipball/master" -O "${name_plugin}.zip" -o /dev/null || true
+	if [ -s "${name_plugin}.zip" ]; then
+		sudo unzip ${name_plugin}.zip
+		sudo cp -a splitbrain-dokuwiki-plugin-${name_plugin}*/. "${final_path}/lib/plugins/${name_plugin}/"
+	fi
 done
 
-# Files owned by www-data can just read
-sudo chown -R root: $final_path
+#=================================================
 
-# except for conf, data, some data subfolders, and lib/plugin, where dokuwiki must have write permissions
-if [ -d "${final_path}/data/media" ]; then
-	sudo chown -R $app:root $final_path/{data/attic,data/cache,data/index,data/locks,data/media*,data/meta,data/pages,data/tmp}
+#=================================================
+# LDAP Configuration
+#=================================================
+
+### Verify the checksum of a file, stored by `ynh_store_file_checksum` in the install script.
+### And create a backup of this file if the checksum is different. So the file will be backed up if the admin had modified it.
+ynh_backup_if_checksum_is_different "$final_path/conf/local.protected.php"
+
+# Always overwrite local file with the one from package.
+cp ../conf/local.protected.php $final_path/conf
+
+# Set the "admin" user
+ynh_replace_string "__YNH_ADMIN_USER__" "$admin"  "$final_path/conf/local.protected.php"
+
+# Recalculate and store the checksum of the file for the next upgrade.
+ynh_store_file_checksum "$final_path/conf/local.protected.php"
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# SECURE FILES AND DIRECTORIES
+#=================================================
+
+# Try to use "least privilege" to grant minimal access
+# For details, see https://www.dokuwiki.org/install:permissions
+
+# Files owned by DokuWiki can just read
+chown -R root: $final_path
+
+# DokuWiki needs to write inside these folders. Do "DokuWiki" owner
+chown $app:root $final_path/conf
+chown $app:root $final_path/inc
+
+# Do "DokuWiki" owner of configuration files that must be writable
+chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
+# Useful for some plugins like https://www.dokuwiki.org/plugin:siteexport
+# See https://www.dokuwiki.org/devel:preload
+chown $app:root $final_path/inc/preload.php
+# Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
+# There are only files in the folder and there is sublevels. No need to use "find"
+chmod -R a+r $final_path/conf
+chmod -R a+r $final_path/inc
+
+# Give write access to "data" and subfolders
+chown -R $app:root $final_path/data
+# Remove access to "other"
+chmod -R o-rwx $final_path/data
+
+# Allow the web admin panel to run, aka "Extension Manager"
+chown -R $app:root $final_path/lib/plugins
+# Allow to install templates
+chown -R $app:root $final_path/lib/tpl
+
+# Allow access to public assets like style sheets
+find $final_path/lib -type f -print0 | xargs -0 chmod 0644
+find $final_path/lib -type d -print0 | xargs -0 chmod 0755
+# Using "find" instead of "chmod -R 755" so files does not become executable too
+# chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
+# find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
+
+#=================================================
+# SETUP SSOWAT
+#=================================================
+
+if [ $is_public -eq 0 ]
+then	# Remove the public access
+	ynh_app_setting_delete $app skipped_uris
 fi
-sudo chown -R $app:root $final_path/{conf,data,lib/plugins,lib/tpl}
-sudo chmod -R 700 $final_path/conf
-sudo chmod -R 700 $final_path/data
-sudo chmod -R 755 $final_path/lib/plugins
-sudo chmod 755 $final_path/lib/tpl/{dokuwiki,dokuwiki/images}
-
-# Modify Nginx configuration file and copy it to Nginx conf directory
-sudo sed -i "s@__PATHTOCHANGE__@$path@g" /etc/nginx/conf.d/$domain.d/$app.conf
-sudo sed -i "s@__FINALPATH__@$final_path@g" /etc/nginx/conf.d/$domain.d/$app.conf
-# sudo sed -i "s@__NAMETOCHANGE__@$app@g" /etc/nginx/conf.d/$domain.d/$app.conf
-sudo sed -i "s@fastcgi_pass unix:/var/run/php5-fpm.sock;@fastcgi_pass unix:/var/run/php5-fpm-${app}.sock;@g" /etc/nginx/conf.d/$domain.d/$app.conf
-
-if [ "$is_public" = "Yes" ];
+# Make app public if necessary
+if [ $is_public -eq 1 ]
 then
-	sudo sed -i "s@#--PRIVATE--@@g" /etc/nginx/conf.d/$domain.d/$app.conf
+	# unprotected_uris allows SSO credentials to be passed anyway
+	ynh_app_setting_set $app unprotected_uris "/"
 fi
 
-# Create the php-fpm pool config
-POOL_FPM
+#=================================================
+# RELOAD NGINX
+#=================================================
 
-# Set ssowat config
-if [ "$is_public" = "Yes" ]; then
-	ynh_app_setting_set $app is_public 1 # Fixe is_public en booléen
-	is_public=1
-else
-	ynh_app_setting_set $app is_public 0
- 	is_public=0
-fi
-
-sudo systemctl reload nginx
-sudo yunohost app ssowatconf
+systemctl reload nginx
