@@ -50,3 +50,10 @@ ynh_backup "/etc/php5/fpm/conf.d/20-$app.ini"
 # SPECIFIC BACKUP
 #=================================================
 
+#=================================================
+# BACKUP FAIL2BAN CONFIGURATION
+#=================================================
+
+ynh_backup "/etc/fail2ban/jail.d/$app.conf"
+ynh_backup "/etc/fail2ban/filter.d/$app.conf"
+

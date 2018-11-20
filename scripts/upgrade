@@ -288,6 +288,12 @@ find $final_path/lib -type d -print0 | xargs -0 chmod 0755
 # find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
 
 #=================================================
+# SETUP FAIL2BAN
+#=================================================
+
+ynh_add_fail2ban_config "/var/log/nginx/$domain-error.log" "^.*authentication failure\" while reading response header from upstream, client: <HOST>,.*$" 5
+
+#=================================================
 # SETUP SSOWAT
 #=================================================
 

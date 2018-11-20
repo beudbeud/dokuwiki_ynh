@@ -46,7 +46,10 @@ ynh_remove_fpm_config
 #=================================================
 # SPECIFIC REMOVE
 #=================================================
+# REMOVE FAIL2BAN CONFIGURATION
+#=================================================
 
+ynh_remove_fail2ban_config
 
 #=================================================
 # GENERIC FINALIZATION
