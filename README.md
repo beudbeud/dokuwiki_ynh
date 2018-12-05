@@ -1,6 +1,6 @@
 # DokuWiki for YunoHost - [English Version]
 
-[![Integration level](https://dash.yunohost.org/integration/dokuwiki.svg)](https://ci-apps-dev.yunohost.org/jenkins/job/dokuwiki%20%28Official%29/lastBuild/consoleFull)
+[![Integration level](https://dash.yunohost.org/integration/dokuwiki.svg)](https://ci-apps-dev.yunohost.org/jenkins/job/dokuwiki%20%28Official%29/lastBuild/consoleFull)  
 [![Install DokuWiki with YunoHost](https://install-app.yunohost.org/install-with-yunohost.png)](https://install-app.yunohost.org/?app=dokuwiki)
 
 > *This package allows you to install DokuWiki quickly and simply on a YunoHost server.  
@@ -30,9 +30,9 @@ DokuWiki is a simple to use and highly versatile Open Source wiki software that 
 
 ### Supported architectures
 
-* x86-64b - [![Build Status](https://ci-apps.yunohost.org/jenkins/job/dokuwiki%20(Official)/lastBuild/console/badge/icon)](https://ci-apps.yunohost.org/jenkins/job/dokuwiki%20(Official)/lastBuild/console)
-* ARMv8-A - [![Build Status](https://ci-apps-arm.yunohost.org/jenkins/job/dokuwiki_ynh%20(Official)%20(%7EARM%7E)/badge/icon)](https://ci-apps-arm.yunohost.org/jenkins/job/dokuwiki_ynh%20(Official)%20(%7EARM%7E))
-* Jessie x86-64b - [![Build Status](https://ci-stretch.nohost.me/jenkins/job/dokuwiki_ynh%20(Official)/badge/icon)](https://ci-stretch.nohost.me/jenkins/job/dokuwiki_ynh%20(Official))
+* x86-64b - ![](https://ci-apps.yunohost.org/ci/logs/dokuwiki%20%28Official%29.svg)
+* ARMv8-A - ![](https://ci-apps-arm.yunohost.org/ci/logs/dokuwiki%20%28Official%29.svg)
+* Jessie x86-64b - ![](https://ci-stretch.nohost.me/ci/logs/dokuwiki%20%28Official%29.svg)
 
 ## Limitations
 
@@ -79,7 +79,7 @@ sudo yunohost app upgrade dokuwiki -u https://github.com/YunoHost-Apps/dokuwiki_
 
 # Dokuwiki pour YunoHost - [Version Française]
 
-[![Niveau d'intégration](https://dash.yunohost.org/integration/dokuwiki.svg)](https://ci-apps-dev.yunohost.org/jenkins/job/dokuwiki%20%28Official%29/lastBuild/consoleFull)
+[![Niveau d'intégration](https://dash.yunohost.org/integration/dokuwiki.svg)](https://ci-apps-dev.yunohost.org/jenkins/job/dokuwiki%20%28Official%29/lastBuild/consoleFull)  
 [![Installer DokuWiki grâce à YunoHost](https://install-app.yunohost.org/install-with-yunohost.png)](https://install-app.yunohost.org/?app=dokuwiki)
 
 ## Dokuwiki, c'est quoi ?
@@ -105,10 +105,9 @@ DokuWiki est un logiciel wiki Open Source simple à utiliser et très polyvalent
 * Lors de la mise à jour, les plugins officiels sont également mis à jour. Nous vous recommandons toutefois de vérifier le bon fonctionnement des plugins dans le panneau d'administration après cette opération. Nous ne pouvons pas savoir si des plugins spéciaux posent problèmes...
 
 ### Architectures matérielles supportées
-
-* x86-64b - [![Build Status](https://ci-apps.yunohost.org/jenkins/job/dokuwiki%20(Official)/lastBuild/console/badge/icon)](https://ci-apps.yunohost.org/jenkins/job/dokuwiki%20(Official)/lastBuild/console)
-* ARMv8-A - [![Build Status](https://ci-apps-arm.yunohost.org/jenkins/job/dokuwiki_ynh%20(Official)%20(%7EARM%7E)/badge/icon)](https://ci-apps-arm.yunohost.org/jenkins/job/dokuwiki_ynh%20(Official)%20(%7EARM%7E))
-* Jessie x86-64b - [![Build Status](https://ci-stretch.nohost.me/jenkins/job/dokuwiki_ynh%20(Official)/badge/icon)](https://ci-stretch.nohost.me/jenkins/job/dokuwiki_ynh%20(Official))
+* x86-64b - ![](https://ci-apps.yunohost.org/ci/logs/dokuwiki%20%28Official%29.svg)
+* ARMv8-A - ![](https://ci-apps-arm.yunohost.org/ci/logs/dokuwiki%20%28Official%29.svg)
+* Jessie x86-64b - ![](https://ci-stretch.nohost.me/ci/logs/dokuwiki%20%28Official%29.svg)
 
 ## Limitations
 
