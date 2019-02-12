@@ -69,8 +69,6 @@ then
 	# Set global variables for nginx helper
 	domain="$old_domain"
 	path_url="$new_path"
-	# Store path_url setting
-	ynh_app_setting_set $app path "$path_url"
 	# Create a dedicated nginx config
 	ynh_add_nginx_config
 fi
@@ -84,12 +82,6 @@ then
 	# Store file checksum for the new config file location
 	ynh_store_file_checksum "/etc/nginx/conf.d/$new_domain.d/$app.conf"
 fi
-
-#=================================================
-# SPECIFIC MODIFICATIONS
-#=================================================
-# ...
-#=================================================
 
 #=================================================
 # GENERIC FINALISATION
