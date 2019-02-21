@@ -20,7 +20,7 @@ DokuWiki is a simple to use and highly versatile Open Source wiki software that 
 
 ## Demo
 
-* [YunoHost demo](https://demo.yunohost.org/dokuwiki/)
+* [YunoHost demo](https://demo.yunohost.org/dokuwiki/doku.php?id=start&do=login&u=demo&p=demo)
 
 ## Configuration
 
