@@ -84,7 +84,7 @@ then
 	# Store file checksum for the new config file location
 	ynh_store_file_checksum "/etc/nginx/conf.d/$new_domain.d/$app.conf"
 	# Fail2ban configuration
-	ynh_add_fail2ban_config "/var/log/nginx/$new_domain-error.log" "^.*authentication failure\" while reading response header from upstream, client: <HOST>,.*$" 5
+	ynh_add_fail2ban_config --logpath="/var/log/nginx/$new_domain-error.log" --failregex="^.*authentication failure. while reading response header from upstream, client: <HOST>,.*POST $path_url.*$" --max_retry=5
 
 fi
 
