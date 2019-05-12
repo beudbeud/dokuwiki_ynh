@@ -94,10 +94,11 @@ ynh_restore_file "/etc/php/7.0/fpm/pool.d/$app.conf"
 #=================================================
 # RESTORE FAIL2BAN CONFIGURATION
 #=================================================
+ynh_script_progression --message="Restoring the fail2ban configuration..." --weight=7
 
-ynh_restore_file "/etc/fail2ban/jail.d/$app.conf"
-ynh_restore_file "/etc/fail2ban/filter.d/$app.conf"
-systemctl restart fail2ban
+ynh_restore_file --origin_path="/etc/fail2ban/jail.d/$app.conf"
+ynh_restore_file --origin_path="/etc/fail2ban/filter.d/$app.conf"
+ynh_systemd_action --action=restart --service_name=fail2ban
 
 #=================================================
 # GENERIC FINALIZATION
