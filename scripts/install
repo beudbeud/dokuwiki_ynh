@@ -159,6 +159,13 @@ ynh_store_file_checksum --file="$final_path/conf/local.protected.php"
 ### Files '$final_path/conf/local.php' and '$final_path/conf/acl.auth.php' can be modified by user, no need to store checksum as they cannot be overwritten safely by the upgrade script
 
 #=================================================
+# INSTALL LOGAUTHERROR PLUGIN FOR FAIL2BAN
+#=================================================
+ynh_script_progression --message="Installing logautherror plugin for fail2ban..." --weight=2
+
+ynh_setup_source --dest_dir="$final_path/lib/plugins/logautherror" --source_id=logautherror
+
+#=================================================
 # GENERIC FINALIZATION
 #=================================================
 # SECURE FILES AND DIRECTORIES
@@ -200,6 +207,13 @@ find $final_path/lib -type d -print0 | xargs -0 chmod 0755
 # Using "find" instead of "chmod -R 755" so files does not become executable too
 # chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
 # find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
+
+#=================================================
+# SETUP FAIL2BAN
+#=================================================
+ynh_script_progression --message="Configuring fail2ban..." --weight=7
+
+ynh_add_fail2ban_config --logpath="/var/log/nginx/$domain-error.log" --failregex="^.*authentication failure. while reading response header from upstream, client: <HOST>,.*POST $path_url.*$" --max_retry=5
 
 #=================================================
 # SETUP SSOWAT

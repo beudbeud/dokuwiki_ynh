@@ -254,6 +254,13 @@ ynh_replace_string --match_string="__YNH_ADMIN_USER__" --replace_string="$admin"
 ynh_store_file_checksum --file="$final_path/conf/local.protected.php"
 
 #=================================================
+# INSTALL LOGAUTHERROR PLUGIN FOR FAIL2BAN
+#=================================================
+ynh_script_progression --message="Upgrading logautherror plugin for fail2ban..." --weight=2
+
+ynh_setup_source --dest_dir="$final_path/lib/plugins/logautherror" --source_id=logautherror
+
+#=================================================
 # GENERIC FINALIZATION
 #=================================================
 # SECURE FILES AND DIRECTORIES
@@ -295,6 +302,13 @@ find $final_path/lib -type d -print0 | xargs -0 chmod 0755
 # Using "find" instead of "chmod -R 755" so files does not become executable too
 # chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
 # find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
+
+#=================================================
+# SETUP FAIL2BAN
+#=================================================
+ynh_script_progression --message="Reconfiguring fail2ban..." --weight=7
+
+ynh_add_fail2ban_config --logpath="/var/log/nginx/$domain-error.log" --failregex="^.*authentication failure. while reading response header from upstream, client: <HOST>,.*POST $path_url.*$" --max_retry=5
 
 #=================================================
 # SETUP SSOWAT

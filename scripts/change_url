@@ -77,6 +77,15 @@ then
 fi
 
 #=================================================
+# SPECIFIC MODIFICATIONS
+#=================================================
+# UPGRADE FAIL2BAN
+#=================================================
+ynh_script_progression --message="Reconfiguring fail2ban..." --weight=6
+
+ynh_add_fail2ban_config --logpath="/var/log/nginx/$new_domain-error.log" --failregex="^.*authentication failure. while reading response header from upstream, client: <HOST>,.*POST $new_path.*$" --max_retry=5
+
+#=================================================
 # GENERIC FINALISATION
 #=================================================
 # RELOAD NGINX
