@@ -19,21 +19,23 @@ ynh_abort_if_errors
 #=================================================
 # LOAD SETTINGS
 #=================================================
+ynh_script_progression --message="Loading settings..." --weight=2
 
 app=$YNH_APP_INSTANCE_NAME
 
-domain=$(ynh_app_setting_get $app domain)
-path_url=$(ynh_app_setting_get $app path)
-final_path=$(ynh_app_setting_get $app final_path)
+domain=$(ynh_app_setting_get --app=$app --key=domain)
+path_url=$(ynh_app_setting_get --app=$app --key=path)
+final_path=$(ynh_app_setting_get --app=$app --key=final_path)
 
 #=================================================
 # CHECK IF THE APP CAN BE RESTORED
 #=================================================
+ynh_script_progression --message="Validating restoration parameters..." --weight=2
 
-ynh_webpath_available $domain $path_url \
-	|| ynh_die "Path not available: ${domain}${path_url}"
+ynh_webpath_available --domain=$domain --path_url=$path_url \
+	|| ynh_die --message="Path not available: ${domain}${path_url}"
 test ! -d $final_path \
-	|| ynh_die "There is already a directory: $final_path "
+	|| ynh_die --message="There is already a directory: $final_path "
 
 #=================================================
 # STANDARD RESTORATION STEPS
@@ -41,20 +43,22 @@ test ! -d $final_path \
 # RESTORE THE NGINX CONFIGURATION
 #=================================================
 
-ynh_restore_file "/etc/nginx/conf.d/$domain.d/$app.conf"
+ynh_restore_file --origin_path="/etc/nginx/conf.d/$domain.d/$app.conf"
 
 #=================================================
 # RESTORE THE APP MAIN DIR
 #=================================================
+ynh_script_progression --message="Restoring the app main directory..."
 
-ynh_restore_file "$final_path"
+ynh_restore_file --origin_path="$final_path"
 
 #=================================================
 # RECREATE THE DEDICATED USER
 #=================================================
+ynh_script_progression --message="Recreating the dedicated system user..." --weight=2
 
 # Create the dedicated user (if not existing)
-ynh_system_user_create $app
+ynh_system_user_create --username=$app
 
 #=================================================
 # RESTORE USER RIGHTS
@@ -63,58 +67,51 @@ ynh_system_user_create $app
 # Try to use "least privilege" to grant minimal access
 # For details, see https://www.dokuwiki.org/install:permissions
 
-# Files owned by DokuWiki can just read
-chown -R root: $final_path
+# DokuWiki needs to write inside these folders. Make "DokuWiki" owner
+chown $app:root $final_path/{conf,inc}
 
-# DokuWiki needs to write inside these folders. Do "DokuWiki" owner
-chown $app:root $final_path/conf
-chown $app:root $final_path/inc
-
-# Do "DokuWiki" owner of configuration files that must be writable
+# Make "DokuWiki" owner of configuration files that must be writable
 chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
-# Useful for some plugins like https://www.dokuwiki.org/plugin:siteexport
+
+# Usefull for some plugins like https://www.dokuwiki.org/plugin:siteexport
 # See https://www.dokuwiki.org/devel:preload
 chown $app:root $final_path/inc/preload.php
-# Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
-# There are only files in the folder and there are no sublevels. No need to use "find"
-chmod -R a+r $final_path/conf
-chmod -R a+r $final_path/inc
 
 # Give write access to "data" and subfolders
 chown -R $app:root $final_path/data
-# Remove access to "other"
-chmod -R o-rwx $final_path/data
 
 # Allow the web admin panel to run, aka "Extension Manager"
 chown -R $app:root $final_path/lib/plugins
 # Allow to install templates
 chown -R $app:root $final_path/lib/tpl
 
-# Allow access to public assets like style sheets
-find $final_path/lib -type f -print0 | xargs -0 chmod 0644
-find $final_path/lib -type d -print0 | xargs -0 chmod 0755
-# Using "find" instead of "chmod -R 755" so files does not become executable too
-# chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
-# find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
-
 #=================================================
 # RESTORE THE PHP-FPM CONFIGURATION
 #=================================================
 
-ynh_restore_file "/etc/php5/fpm/pool.d/$app.conf"
-ynh_restore_file "/etc/php5/fpm/conf.d/20-$app.ini"
+ynh_restore_file --origin_path="/etc/php/7.0/fpm/pool.d/$app.conf"
 
 #=================================================
-# SPECIFIC RESTORATION
+# RESTORE FAIL2BAN CONFIGURATION
 #=================================================
+ynh_script_progression --message="Restoring the fail2ban configuration..." --weight=7
 
-
+ynh_restore_file --origin_path="/etc/fail2ban/jail.d/$app.conf"
+ynh_restore_file --origin_path="/etc/fail2ban/filter.d/$app.conf"
+ynh_systemd_action --action=restart --service_name=fail2ban
 
 #=================================================
 # GENERIC FINALIZATION
 #=================================================
 # RELOAD NGINX AND PHP-FPM
 #=================================================
+ynh_script_progression --message="Reloading nginx web server and php-fpm..." --weight=2
 
-systemctl reload php5-fpm
-systemctl reload nginx
+ynh_systemd_action --service_name=php7.0-fpm --action=reload
+ynh_systemd_action --service_name=nginx --action=reload
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_script_progression --message="Restoration completed for $app" --last
