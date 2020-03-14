@@ -23,11 +23,12 @@ $conf['plugin']['authldap']['port']        = 389;
 $conf['plugin']['authldap']['version']     = 3;
 $conf['plugin']['authldap']['usertree']    = 'ou=users,dc=yunohost,dc=org';
 $conf['plugin']['authldap']['userfilter']  = '(&(uid=%{user})(objectClass=posixAccount))';
-# no groups
-#$conf['plugin']['authldap']['grouptree']   = 'ou=Group, dc=server, dc=tld';
-#$conf['plugin']['authldap']['groupfilter'] = '(&(objectClass=posixGroup)(|(gidNumber=%{gid})(memberUID=%{user})))'; 
 
 /* Advanced Settings */
 $conf['updatecheck'] = 0;                //automatically check for new releases?
+
 // Taken from previous package. Don't know what it does. Maybe Yunohost corner logo ?
 $conf['cssdatauri']  = 512;              //Maximum byte size of small images to embed into CSS, won't work on IE<8
+
+// URL Rewriting is handled by the webserver
+$conf['userewrite'] = 1;                 // See https://www.dokuwiki.org/config:userewrite
