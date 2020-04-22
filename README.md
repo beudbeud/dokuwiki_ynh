@@ -12,11 +12,11 @@ If you don't have YunoHost, please see [here](https://yunohost.org/#/install) to
 
 DokuWiki is a simple to use and highly versatile Open Source wiki software that doesn't require a database. It is loved by users for its clean and readable syntax. The ease of maintenance, backup and integration makes it an administrator's favorite. Built in access controls and authentication connectors make DokuWiki especially useful in the enterprise context and the large number of plugins contributed by its vibrant community allow for a broad range of use cases beyond a traditional wiki.
 
-**Shipped version:** 2018-04-22a "Greebo"
+**Shipped version:** 2018-04-22b "Greebo"
 
 ## Screenshots
 
-![](https://www.dokuwiki.org/_media/dokuwikimainwindow.png)
+![Screenshot of DokuWiki main window](dokuwikimainwindow.png)
 
 ## Demo
 
@@ -26,8 +26,8 @@ DokuWiki is a simple to use and highly versatile Open Source wiki software that 
 
 ## Documentation
 
-* Official documentation: https://www.dokuwiki.org/manual
-* YunoHost documentation: https://yunohost.org/#/app_dokuwiki
+* Official documentation: <https://www.dokuwiki.org/manual>
+* YunoHost documentation: <https://yunohost.org/#/app_dokuwiki>
 
 ## YunoHost specific features
 
@@ -40,26 +40,17 @@ DokuWiki is a simple to use and highly versatile Open Source wiki software that 
 
 * x86-64b - [![Build Status](https://ci-apps.yunohost.org/ci/logs/dokuwiki%20%28Apps%29.svg)](https://ci-apps.yunohost.org/ci/apps/dokuwiki/)
 * ARMv8-A - [![Build Status](https://ci-apps-arm.yunohost.org/ci/logs/dokuwiki%20%28Apps%29.svg)](https://ci-apps-arm.yunohost.org/ci/apps/dokuwiki/)
-* Jessie x86-64b - [![Build Status](https://ci-stretch.nohost.me/ci/logs/dokuwiki%20%28Apps%29.svg)](https://ci-stretch.nohost.me/ci/apps/dokuwiki/)
 
 ## Limitations
 
 * Cannot create or login with dokuwiki internal users, only users from Yunohost (Work needed for [authchained plugin](https://www.dokuwiki.org/plugin:authchained))
 
-## Additional information
-
-### Changelog
-
-* *Many missing - List taken from previous documentation*
-* 07 Mar 2017 - Update app
-* 11 Feb 2017 - Create script app
-
 ## Links
 
- * Report a bug: https://github.com/YunoHost-Apps/dokuwiki_ynh/issues
- * App website: https://www.dokuwiki.org
- * Upstream app repository: https://github.com/splitbrain/dokuwiki
- * YunoHost website: https://yunohost.org
+* Report a bug: <https://github.com/YunoHost-Apps/dokuwiki_ynh/issues>
+* App website: <https://www.dokuwiki.org>
+* Upstream app repository: <https://github.com/splitbrain/dokuwiki>
+* YunoHost website: <https://yunohost.org>
 
 ---
 
@@ -70,7 +61,8 @@ DokuWiki is a simple to use and highly versatile Open Source wiki software that 
 Instead of merging directly into `master`, please do your pull request to the [`testing` branch](https://github.com/YunoHost-Apps/dokuwiki_ynh/tree/testing)
 
 To try the `testing` branch, please proceed like that.
-```
+
+```bash
 sudo yunohost app install https://github.com/YunoHost-Apps/dokuwiki_ynh/tree/testing --debug
 or
 sudo yunohost app upgrade dokuwiki -u https://github.com/YunoHost-Apps/dokuwiki_ynh/tree/testing --debug
