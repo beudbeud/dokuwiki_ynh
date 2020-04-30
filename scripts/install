@@ -22,7 +22,7 @@ ynh_abort_if_errors
 
 domain=$YNH_APP_ARG_DOMAIN
 path_url=$YNH_APP_ARG_PATH
-admin=$YNH_APP_ARG_ADMIN
+admin_user=$YNH_APP_ARG_ADMIN
 is_public=$YNH_APP_ARG_IS_PUBLIC
 language=$YNH_APP_ARG_LANGUAGE
 
@@ -46,8 +46,6 @@ ynh_script_progression --message="Storing installation settings..." --weight=2
 
 ynh_app_setting_set --app=$app --key=domain --value=$domain
 ynh_app_setting_set --app=$app --key=path --value=$path_url
-ynh_app_setting_set --app=$app --key=admin --value=$admin
-ynh_app_setting_set --app=$app --key=is_public --value=$is_public
 ynh_app_setting_set --app=$app --key=language --value=$language
 
 #=================================================
@@ -108,8 +106,12 @@ ynh_script_progression --message="Configuring dokuwiki..." --weight=2
 # It will only be updated by Yunohost package or directly by adventurous users
 cp ../conf/local.protected.php $final_path/conf
 
-# Set the "admin" user
-ynh_replace_string --match_string="__YNH_ADMIN_USER__" --replace_string="$admin"    --target_file="$final_path/conf/local.protected.php"
+# Create the "admin" group and add the "admin" user
+ynh_permission_create --permission "admin" --allowed "$admin_user"
+
+# Customize admin group in case of multiple wiki install managed by different admins
+# dokuwiki.admin; dokuwiki__1.admin; etc
+ynh_replace_string --match_string="__APP__" --replace_string="$app" --target_file="$final_path/conf/local.protected.php"
 
 
 # This file might be modified by dokuwiki admin panel or by plugins
@@ -216,13 +218,14 @@ ynh_add_fail2ban_config --logpath="/var/log/nginx/$domain-error.log" --failregex
 #=================================================
 # SETUP SSOWAT
 #=================================================
-ynh_script_progression --message="Configuring SSOwat..."
+ynh_script_progression --message="Configuring permissions..." --weight=2
 
 # Make app public if necessary
 if [ $is_public -eq 1 ]
 then
-	# unprotected_uris allows SSO credentials to be passed anyway.
-	ynh_app_setting_set --app=$app --key=unprotected_uris --value="/"
+	# Everyone can access the app.
+	# The "main" permission is automatically created before the install script.
+	ynh_permission_update --permission "main" --add "visitors"
 fi
 
 #=================================================
