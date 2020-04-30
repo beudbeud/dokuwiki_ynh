@@ -18,8 +18,6 @@ app=$YNH_APP_INSTANCE_NAME
 
 domain=$(ynh_app_setting_get --app=$app --key=domain)
 path_url=$(ynh_app_setting_get --app=$app --key=path)
-admin=$(ynh_app_setting_get --app=$app --key=admin)
-is_public=$(ynh_app_setting_get --app=$app --key=is_public)
 final_path=$(ynh_app_setting_get --app=$app --key=final_path)
 
 #=================================================
@@ -33,32 +31,51 @@ upgrade_type=$(ynh_check_app_version_changed)
 #=================================================
 ynh_script_progression --message="Ensuring downward compatibility..."
 
-# Fix is_public as a boolean value
-if [ "$is_public" = "Yes" ]; then
-	ynh_app_setting_set --app=$app --key=is_public --value=1
-	is_public=1
-elif [ "$is_public" = "No" ]; then
-	ynh_app_setting_set --app=$app --key=is_public --value=0
-	is_public=0
-fi
-
 # If final_path doesn't exist, create it
 if [ -z "$final_path" ]; then
 	final_path=/var/www/$app
 	ynh_app_setting_set --app=$app --key=final_path --value=$final_path
 fi
 
-# TODO Not sure if still needed ??
-# admin default value, if not set
-if [ -z "$admin" ]; then
-	admin=$(yunohost user list | grep 'username' -m1 | awk '{print $2}')
-	ynh_app_setting_set --app=$app --key=is_public --value=$is_public
-fi
-
 # language default value, if not set
 if [ -z "$language" ]; then
 	language='en'
 	ynh_app_setting_set --app=$app --key=language --value=$language
+fi
+
+# Cleaning legacy permissions
+admin_user=$(ynh_app_setting_get --app=$app --key=admin)
+
+if [ -n "$admin_user" ]; then
+	# Removing skipped/unprotected_uris under certain conditions, remove the visitors group added during the migration process of 3.7
+	# Remove skipped_uris. If the app was public, add visitors again to the main permission
+	if ynh_permission_has_user --permission=admin --user="$admin_user"
+	then
+		echo "permission admin already exist. Nothing to do"
+	else
+		ynh_permission_create --permission "admin" --allowed "$admin_user"
+	fi
+	# Remove legacy admin setting
+	ynh_app_setting_delete --app=$app --key=admin
+fi
+
+is_public=$(ynh_app_setting_get --app=$app --key=is_public)
+if [ -n "$is_public" ]; then
+	# Remove unprotected_uris
+	ynh_app_setting_delete --app=$app --key=unprotected_uris
+	# Remove protected_uris
+	ynh_app_setting_delete --app=$app --key=protected_uris
+
+	# Removing skipped/unprotected_uris under certain conditions, remove the visitors group added during the migration process of 3.7
+	# Remove skipped_uris. If the app was public, add visitors again to the main permission
+	if ynh_permission_has_user --permission=main --user=visitors
+	then
+		ynh_app_setting_delete --app=$app --key=skipped_uris
+		ynh_permission_update --permission "main" --add "visitors"
+	else
+		ynh_app_setting_delete --app=$app --key=skipped_uris
+	fi
+	ynh_app_setting_delete --app=$app --key=is_public
 fi
 
 
@@ -247,8 +264,12 @@ ynh_backup_if_checksum_is_different --file="$final_path/conf/local.protected.php
 # Always overwrite local file with the one from package.
 cp ../conf/local.protected.php $final_path/conf
 
-# Set the "admin" user
-ynh_replace_string --match_string="__YNH_ADMIN_USER__" --replace_string="$admin" --target_file="$final_path/conf/local.protected.php"
+# Create the "admin" group and add the "admin" user
+#ynh_permission_create --permission "admin" --allowed "$admin_user"
+
+# Customize admin group in case of multiple wiki install managed by different admins
+# dokuwiki.admin; dokuwiki__1.admin; etc
+ynh_replace_string --match_string="__APP__" --replace_string="$app" --target_file="$final_path/conf/local.protected.php"
 
 # Recalculate and store the checksum of the file for the next upgrade.
 ynh_store_file_checksum --file="$final_path/conf/local.protected.php"
@@ -313,18 +334,8 @@ ynh_add_fail2ban_config --logpath="/var/log/nginx/$domain-error.log" --failregex
 #=================================================
 # SETUP SSOWAT
 #=================================================
-ynh_script_progression --message="Upgrading SSOwat configuration..."
-
-if [ $is_public -eq 0 ]
-then	# Remove the public access
-	ynh_app_setting_delete --app=$app --key=skipped_uris
-fi
-# Make app public if necessary
-if [ $is_public -eq 1 ]
-then
-	# unprotected_uris allows SSO credentials to be passed anyway
-	ynh_app_setting_set --app=$app --key=unprotected_uris --value="/"
-fi
+ # Nothinf to do here. Already done in "ENSURE DOWNWARD COMPATIBILITY" part
+ #ynh_script_progression --message="Upgrading permissions configuration..." --weight=2
 
 #=================================================
 # RELOAD NGINX
