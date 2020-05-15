@@ -236,7 +236,7 @@ then
             # Move to the dokuwiki installation folder so the "official" commands can be used without adaptation
             cd $final_path
 
-            grep --extended-regexp --invert-match '^($|#)' data/deleted.files | xargs --max-args=1 rm --force || true
+            grep --extended-regexp --invert-match '^($|#)' data/deleted.files | xargs --max-args=1 rm --force --dir || true
         )
     fi
 
