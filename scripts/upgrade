@@ -236,7 +236,41 @@ then
             # Move to the dokuwiki installation folder so the "official" commands can be used without adaptation
             cd $final_path
 
-            grep --extended-regexp --invert-match '^($|#)' data/deleted.files | xargs --max-args=1 rm --force --dir || true
+            while IFS= read -r line; do
+
+                # Added this test to reduce the spam printed by helper to the user in the webadmin.
+                # Should be less 'scary' to them I think
+                #
+                # number of messages = number of lines *2    (673 lines while writing this)
+                ### grep --extended-regexp --invert-match '^($|#)' data/deleted.files | wc -l
+                ### 673
+                #
+                # Spam sample:
+                    #Attention : /!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time.
+                    #Info : 'inc/parser/spamcheck.php' wasn't deleted because it doesn't exist.
+                    #Attention : /!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time.
+                    #Attention : /!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time.
+                    #Info : 'lib/images/favicon.ico' wasn't deleted because it doesn't exist.
+                    #Info : 'lib/images/thumbup.gif' wasn't deleted because it doesn't exist.
+                    #Attention : /!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time.
+                    #Info : 'lib/images/toolbar/code.png' wasn't deleted because it doesn't exist.
+                    #Attention : /!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time.
+                    #Info : 'lib/images/toolbar/empty.png' wasn't deleted because it doesn't exist.
+                if [ -f "$line" ]; then
+                    ynh_secure_remove --file "$line"
+                fi
+            done < <(grep --null --extended-regexp --invert-match '^($|#)' "$final_path/data/deleted.files" | xargs --null --max-args=1 || true)
+            #    ^ ^  First < is redirection, second is process substitution.
+            # Source: https://tldp.org/LDP/abs/html/process-sub.html
+
+            # Previous attemps if someone reads this one day
+            ###grep --extended-regexp --invert-match '^($|#)' data/deleted.files | xargs --max-args=1 rm --verbose --force --dir 2>&1 || true
+            ###grep --extended-regexp --invert-match '^($|#)' data/deleted.files | xargs --max-args=1 ynh_secure_remove --file 2>&1
+            
+            ###grep --null --extended-regexp --invert-match '^($|#)' data/deleted.files > toto.list
+            ###xargs --null --verbose --max-args=1 --arg-file=toto.list ynh_secure_remove 2>&1
+
+
         )
     fi
 
