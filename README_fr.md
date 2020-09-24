@@ -26,13 +26,8 @@ DokuWiki est un logiciel wiki Open Source simple à utiliser et très polyvalent
 
 ## Documentation
 
-<<<<<<< Updated upstream
-* Documentation officielle: <https://www.dokuwiki.org/manual>
-* Documentation YunoHost: <https://yunohost.org/#/app_dokuwiki>
-=======
 * Documentation officielle : https://www.dokuwiki.org/manual
 * Documentation YunoHost : https://yunohost.org/#/app_dokuwiki
->>>>>>> Stashed changes
 
 ## Caractéristiques spécifiques YunoHost
 
@@ -50,14 +45,6 @@ DokuWiki est un logiciel wiki Open Source simple à utiliser et très polyvalent
 
 * Impossible d'ajouter et d'utiliser les utilisateurs internes de DokuWiki, seulement ceux de YunoHost (travail nécessaire pour [authchained plugin](https://www.dokuwiki.org/plugin:authchained))
 
-<<<<<<< Updated upstream
-## Liens
-
-* Signaler un bug: <https://github.com/YunoHost-Apps/dokuwiki_ynh/issues>
-* Site de l'application: <https://www.dokuwiki.org>
-* Dépôt de l'application principale: <https://github.com/splitbrain/dokuwiki>
-* Site web YunoHost: <https://yunohost.org>
-=======
 ## Informations additionnelles
 
 ### Historique des versions
@@ -68,7 +55,6 @@ DokuWiki est un logiciel wiki Open Source simple à utiliser et très polyvalent
  * Site de l'application : https://www.dokuwiki.org
  * Dépôt de l'application principale : https://github.com/splitbrain/dokuwiki
  * Site web YunoHost : https://yunohost.org/
->>>>>>> Stashed changes
 
 ---
 
