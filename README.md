@@ -1,6 +1,6 @@
 # DokuWiki for YunoHost
 
-[![Integration level](https://dash.yunohost.org/integration/dokuwiki.svg)](https://dash.yunohost.org/appci/app/dokuwiki)  
+[![Niveau d'intégration](https://dash.yunohost.org/integration/dokuwiki.svg)](https://dash.yunohost.org/appci/app/dokuwiki) ![](https://ci-apps.yunohost.org/ci/badges/dokuwiki.status.svg) ![](https://ci-apps.yunohost.org/ci/badges/dokuwiki.maintain.svg)  
 [![Install DokuWiki with YunoHost](https://install-app.yunohost.org/install-with-yunohost.png)](https://install-app.yunohost.org/?app=dokuwiki)
 
 *[Lire ce readme en français.](./README_fr.md)*
@@ -38,12 +38,12 @@ DokuWiki is a simple to use and highly versatile Open Source wiki software that 
 
 ### Supported architectures
 
-* x86-64b - [![Build Status](https://ci-apps.yunohost.org/ci/logs/dokuwiki%20%28Apps%29.svg)](https://ci-apps.yunohost.org/ci/apps/dokuwiki/)
+* x86-64 - [![Build Status](https://ci-apps.yunohost.org/ci/logs/dokuwiki%20%28Apps%29.svg)](https://ci-apps.yunohost.org/ci/apps/dokuwiki/)
 * ARMv8-A - [![Build Status](https://ci-apps-arm.yunohost.org/ci/logs/dokuwiki%20%28Apps%29.svg)](https://ci-apps-arm.yunohost.org/ci/apps/dokuwiki/)
 
 ## Limitations
 
-* Cannot create or login with dokuwiki internal users, only users from Yunohost (Work needed for [authchained plugin](https://www.dokuwiki.org/plugin:authchained))
+* Cannot create or login with DokuWiki internal users, only users from YunoHost (Work needed for [authchained plugin](https://www.dokuwiki.org/plugin:authchained))
 
 ## Links
 
