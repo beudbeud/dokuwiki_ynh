@@ -16,7 +16,7 @@ DokuWiki est un logiciel wiki Open Source simple à utiliser et très polyvalent
 
 ## Captures d'écran
 
-![Capture d'écran de la fenêtre principale de DokuWiki](dokuwikimainwindow.png)
+![Capture d'écran](https://www.dokuwiki.org/lib/exe/fetch.php?tok=341927&media=http%3A%2F%2Fimg832.imageshack.us%2Fimg832%2F8784%2Fdokuwikitemplatevector2.png)
 
 ## Démo
 
