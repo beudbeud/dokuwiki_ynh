@@ -9,7 +9,7 @@
         "es": "Un sistema de Wiki de uso sencillicimo y compatible con los estándares.",
         "it": "Un Wiki aderente agli standard, semplice da usare, finalizzato principalmente alla creazione di documentazione di qualsiasi tipo."
     },
-    "version": "2018-04-22b~ynh1",
+    "version": "2020-07-29~ynh1",
     "url": "https://www.dokuwiki.org",
     "license": "GPL-2.0-or-later",
     "maintainer": {
@@ -63,10 +63,10 @@
                 "name": "is_public",
                 "type": "boolean",
                 "ask": {
-                    "en": "Is it a public DokuWiki site ?",
+                    "en": "Is it a public DokuWiki site?",
                     "fr": "Est-ce un site public ?"
                 },
-                "default": "true"
+                "default": true
             },
             {
                 "name": "language",
