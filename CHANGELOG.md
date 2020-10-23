@@ -10,6 +10,16 @@
 
 ------------
 
+## [2020-07-29~ynh2] - 2020-10-23
+
+### Added
+
+- New DokuWiki version `2020-07-29`
+
+### Changed
+
+- Set PHP7.3 as default
+
 ## [2018-04-22b~ynh1] - 2020-03-23
 
 ### Added
