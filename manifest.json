@@ -9,7 +9,7 @@
         "es": "Un sistema de Wiki de uso sencillicimo y compatible con los estándares.",
         "it": "Un Wiki aderente agli standard, semplice da usare, finalizzato principalmente alla creazione di documentazione di qualsiasi tipo."
     },
-    "version": "2020-07-29~ynh1",
+    "version": "2020-07-29~ynh2",
     "url": "https://www.dokuwiki.org",
     "license": "GPL-2.0-or-later",
     "maintainer": {
