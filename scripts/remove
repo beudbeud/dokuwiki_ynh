@@ -32,23 +32,23 @@ ynh_secure_remove --file="$final_path"
 #=================================================
 # REMOVE NGINX CONFIGURATION
 #=================================================
-ynh_script_progression --message="Removing NGINX web server configuration..."
+ynh_script_progression --message="Removing nginx web server configuration..."
 
-# Remove the dedicated NGINX config
+# Remove the dedicated nginx config
 ynh_remove_nginx_config
 
 #=================================================
 # REMOVE PHP-FPM CONFIGURATION
 #=================================================
-ynh_script_progression --message="Removing PHP-FPM configuration..." --weight=2
+ynh_script_progression --message="Removing php-fpm configuration..." --weight=2
 
-# Remove the dedicated PHP-FPM config
+# Remove the dedicated php-fpm config
 ynh_remove_fpm_config
 
 #=================================================
 # REMOVE FAIL2BAN CONFIGURATION
 #=================================================
-ynh_script_progression --message="Removing Fail2Ban configuration..." --weight=7
+ynh_script_progression --message="Removing fail2ban configuration..." --weight=7
 
 ynh_remove_fail2ban_config
 
