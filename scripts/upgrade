@@ -21,6 +21,7 @@ path_url=$(ynh_app_setting_get --app=$app --key=path)
 admin=$(ynh_app_setting_get --app=$app --key=admin)
 is_public=$(ynh_app_setting_get --app=$app --key=is_public)
 final_path=$(ynh_app_setting_get --app=$app --key=final_path)
+phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
 
 #=================================================
 # CHECK VERSION
@@ -61,12 +62,10 @@ if [ -z "$language" ]; then
 	ynh_app_setting_set --app=$app --key=language --value=$language
 fi
 
-
-
-# Yunohost specific configuration, if it isn't exist already
+# YunoHost specific configuration, if it isn't exist already
 
 # Previously, these settings were store in an unique "dokuwiki.php"
-# Now, they are split in multiple files to ease upgrading process (separate Yunohost config from user config)
+# Now, they are split in multiple files to ease upgrading process (separate YunoHost config from user config)
 
 # Loading order of configuration files
 #
@@ -176,9 +175,9 @@ fi
 #=================================================
 # NGINX CONFIGURATION
 #=================================================
-ynh_script_progression --message="Upgrading nginx web server configuration..." --weight=2
+ynh_script_progression --message="Upgrading NGINX web server configuration..." --weight=2
 
-# Create a dedicated nginx config
+# Create a dedicated NGINX config
 ynh_add_nginx_config
 
 #=================================================
@@ -192,9 +191,9 @@ ynh_system_user_create --username=$app
 #=================================================
 # PHP-FPM CONFIGURATION
 #=================================================
-ynh_script_progression --message="Upgrading php-fpm configuration..."
+ynh_script_progression --message="Upgrading PHP-FPM configuration..."
 
-# Create a dedicated php-fpm config
+# Create a dedicated PHP-FPM config
 ynh_add_fpm_config
 
 #=================================================
@@ -203,7 +202,7 @@ ynh_add_fpm_config
 
 if [ "$upgrade_type" == "UPGRADE_APP" ]
 then
-    ynh_script_progression --message="Upgrading dokuwiki..." --weight=7
+    ynh_script_progression --message="Upgrading DokuWiki..." --weight=7
 
     # Remove upgrade notification inside Dokuwiki's admin panel
     # See https://www.dokuwiki.org/update_check
@@ -256,7 +255,7 @@ ynh_store_file_checksum --file="$final_path/conf/local.protected.php"
 #=================================================
 # INSTALL LOGAUTHERROR PLUGIN FOR FAIL2BAN
 #=================================================
-ynh_script_progression --message="Upgrading logautherror plugin for fail2ban..." --weight=2
+ynh_script_progression --message="Upgrading logautherror plugin for Fail2Ban..." --weight=2
 
 ynh_setup_source --dest_dir="$final_path/lib/plugins/logautherror" --source_id=logautherror
 
@@ -306,7 +305,7 @@ find $final_path/lib -type d -print0 | xargs -0 chmod 0755
 #=================================================
 # SETUP FAIL2BAN
 #=================================================
-ynh_script_progression --message="Reconfiguring fail2ban..." --weight=7
+ynh_script_progression --message="Reconfiguring Fail2Ban..." --weight=7
 
 ynh_add_fail2ban_config --logpath="/var/log/nginx/$domain-error.log" --failregex="^.*authentication failure. while reading response header from upstream, client: <HOST>,.*POST $path_url.*$" --max_retry=5
 
@@ -329,7 +328,7 @@ fi
 #=================================================
 # RELOAD NGINX
 #=================================================
-ynh_script_progression --message="Reloading nginx web server..."
+ynh_script_progression --message="Reloading NGINX web server..."
 
 ynh_systemd_action --service_name=nginx --action=reload
 
