@@ -1,7 +1,7 @@
 # DokuWiki for YunoHost
 
 [![Integration level](https://dash.yunohost.org/integration/dokuwiki.svg)](https://dash.yunohost.org/appci/app/dokuwiki) ![](https://ci-apps.yunohost.org/ci/badges/dokuwiki.status.svg) ![](https://ci-apps.yunohost.org/ci/badges/dokuwiki.maintain.svg)  
-[![Install DokuWiki with YunoHost](https://install-app.yunohost.org/install-with-yunohost.png)](https://install-app.yunohost.org/?app=dokuwiki)
+[![Install DokuWiki with YunoHost](https://install-app.yunohost.org/install-with-yunohost.svg)](https://install-app.yunohost.org/?app=dokuwiki)
 
 *[Lire ce readme en français.](./README_fr.md)*
 
