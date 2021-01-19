@@ -24,7 +24,7 @@ $conf['plugin']['authldap']['version']     = 3;
 $conf['plugin']['authldap']['usertree']    = 'ou=users,dc=yunohost,dc=org';
 $conf['plugin']['authldap']['grouptree']   = 'ou=permission,dc=yunohost,dc=org';
 $conf['plugin']['authldap']['userfilter']  = '(&(objectClass=posixAccount)(uid=%{user})(permission=cn=__APP__.main,ou=permission,dc=yunohost,dc=org))';
-$conf['plugin']['authldap']['groupfilter'] = '(&(objectClass=posixGroup)(memberUID=%{user})(cn=__APP__.*))';
+$conf['plugin']['authldap']['groupfilter'] = '(&(objectClass=posixGroup)(memberUid=%{user}))';
 #$conf['plugin']['authldap']['debug']      = 1;
 
 
