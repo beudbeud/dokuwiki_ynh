@@ -10,6 +10,17 @@
 
 ------------
 
+# [2020-07-29~ynh4] - 2021-01-19
+
+### Added
+
+- Support for new permission system in YunoHost 3.7
+
+### Changed
+
+- wiki administrators is now a group and can be modified from webadmin YunoHost panel
+- Require YunoHost 3.7 minimum
+
 ## [2020-07-29~ynh2] - 2020-10-23
 
 ### Added

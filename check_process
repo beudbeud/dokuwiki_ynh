@@ -14,7 +14,8 @@
 		setup_private=1
 		setup_public=1
 		upgrade=1
-		upgrade=1	from_commit=01add99d3d903ca6d07f863045edf2ba46cf18d5
+		# Laster released version. See https://github.com/YunoHost-Apps/dokuwiki_ynh/commits/master
+		upgrade=1	from_commit=500a7d3fa9c008a2b75d0f6bec519e41fed97da0
 		backup_restore=1
 		multi_instance=1
 		port_already_use=0
