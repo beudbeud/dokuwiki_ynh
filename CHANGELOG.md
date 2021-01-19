@@ -10,7 +10,7 @@
 
 ------------
 
-# [2018-04-22b~ynh2] - 2020-04-30
+# [2020-07-29~ynh4] - 2021-01-19
 
 ### Added
 
@@ -21,6 +21,15 @@
 - wiki administrators is now a group and can be modified from webadmin YunoHost panel
 - Require YunoHost 3.7 minimum
 
+## [2020-07-29~ynh2] - 2020-10-23
+
+### Added
+
+- New DokuWiki version `2020-07-29`
+
+### Changed
+
+- Set PHP7.3 as default
 
 ## [2018-04-22b~ynh1] - 2020-03-23
 
