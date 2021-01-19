@@ -1,37 +1,83 @@
 {
     "name": "Dokuwiki",
     "id": "dokuwiki",
+    "packaging_format": 1,
     "description": {
-        "en": "DokuWiki is a simple to use and highly versatile Open Source wiki software that doesn't require a database"
+        "en": "A lightweight, simple to use and highly versatile wiki",
+        "fr": "Un wiki léger, simple à utiliser et très polyvalent",
+        "de": "Ein standardkonformes, einfach zu benutzendes Wiki und zielt hauptsächlich auf die Erstellung von Dokumentationen aller Art ab.",
+        "es": "Un sistema de Wiki de uso sencillicimo y compatible con los estándares.",
+        "it": "Un Wiki aderente agli standard, semplice da usare, finalizzato principalmente alla creazione di documentazione di qualsiasi tipo."
     },
-    "developer": {
-        "name": "loklin"
+
+    "version": "2020-07-29~ynh4",
+    "url": "https://www.dokuwiki.org",
+    "license": "GPL-2.0-or-later",
+    "maintainer": {
+        "name": "Gofannon",
+        "email": "gofannon@riseup.net"
     },
-    "multi_instance": "false",
+    "previous_maintainers": [
+    {
+        "name": "opi",
+        "email": "opi@zeropi.net"
+    }],
+    "requirements": {
+        "yunohost": ">= 4.1.0"
+    },
+    "multi_instance": true,
+    "services": [
+        "nginx",
+        "php7.0-fpm"
+    ],
     "arguments": {
         "install" : [
             {
                 "name": "domain",
+                "type": "domain",
                 "ask": {
-                    "en": "Choose a domain for DokuWiki"
+                    "en": "Choose a domain for DokuWiki",
+                    "fr": "Choisissez un domaine pour DokuWiki"
                 },
                 "example": "domain.org"
             },
             {
                 "name": "path",
+                "type": "path",
                 "ask": {
-                    "en": "Choose a path for DokuWiki"
+                    "en": "Choose a path for DokuWiki",
+                    "fr": "Choisissez un chemin pour DokuWiki"
                 },
-                "example": "/DokuWiki",
-                "default": "/DokuWiki"
+                "example": "/dokuwiki",
+                "default": "/dokuwiki"
+            },
+            {
+                "name": "admin",
+                "type": "user",
+                "ask": {
+                    "en": "Choose an admin user",
+                    "fr": "Choisissez l'administrateur"
+                },
+                "example": "johndoe"
             },
             {
                 "name": "is_public",
+                "type": "boolean",
                 "ask": {
-                    "en": "Is it a public DokuWiki site ?"
+                    "en": "Is it a public DokuWiki site?",
+                    "fr": "Est-ce un site public ?"
                 },
-                "choices": ["Yes", "No"],
-                "default": "Yes"
+                "default": true
+            },
+            {
+                "name": "language",
+                "type": "string",
+                "ask": {
+                    "en": "Choose the application language",
+                    "fr": "Choisissez la langue de l'application"
+                },
+                "choices": ["en", "fr"],
+                "default": "en"
             }
         ]
     }
