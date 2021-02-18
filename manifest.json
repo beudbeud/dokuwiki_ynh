@@ -9,7 +9,7 @@
         "es": "Un sistema de Wiki de uso sencillicimo y compatible con los estándares.",
         "it": "Un Wiki aderente agli standard, semplice da usare, finalizzato principalmente alla creazione di documentazione di qualsiasi tipo."
     },
-    "version": "2020-07-29~ynh3",
+    "version": "2020-07-29~ynh4",
     "url": "https://www.dokuwiki.org",
     "license": "GPL-2.0-or-later",
     "maintainer": {
@@ -22,7 +22,7 @@
         "email": "opi@zeropi.net"
     }],
     "requirements": {
-        "yunohost": ">= 3.8.1"
+        "yunohost": ">= 4.1.0"
     },
     "multi_instance": true,
     "services": [
