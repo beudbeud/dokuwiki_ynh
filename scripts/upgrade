@@ -20,12 +20,27 @@ domain=$(ynh_app_setting_get --app=$app --key=domain)
 path_url=$(ynh_app_setting_get --app=$app --key=path)
 final_path=$(ynh_app_setting_get --app=$app --key=final_path)
 phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+language=$(ynh_app_setting_get --app=$app --key=language)
 
 #=================================================
 # CHECK VERSION
 #=================================================
 
 upgrade_type=$(ynh_check_app_version_changed)
+
+#=================================================
+# BACKUP BEFORE UPGRADE THEN ACTIVE TRAP
+#=================================================
+ynh_script_progression --message="Backing up the app before upgrading (may take a while)..." --weight=9
+
+# Backup the current version of the app
+ynh_backup_before_upgrade
+ynh_clean_setup () {
+	# restore it if the upgrade fails
+	ynh_restore_upgradebackup
+}
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
 
 #=================================================
 # ENSURE DOWNWARD COMPATIBILITY
@@ -67,8 +82,6 @@ if ynh_legacy_permissions_exists; then
 	ynh_app_setting_delete --app=$app --key=is_public
 fi
 
-
-
 # Yunohost specific configuration, if it isn't exist already
 
 # Previously, these settings were store in an unique "dokuwiki.php"
@@ -95,17 +108,15 @@ fi
 # Do not overwrite existing dokuwiki configuration as it could have user customization's and settings.
 # Create file if it does not exist
 if [ ! -f "$final_path/conf/local.php" ]; then
-	cp ../conf/local.php $final_path/conf
-
 	# Set the default "language"
-	ynh_replace_string --match_string="__YNH_LANGUAGE__" --replace_string="$language" --target_file="$final_path/conf/local.php"
+	ynh_add_config --template="../conf/local.php" --destination="$final_path/conf/local.php"
 fi
 
 # Do not overwrite existing ACL configuration file as it could have user customization's and settings.
 # Create file if it does not exist
 # See https://www.dokuwiki.org/acl#background_info
 if [ ! -f "$final_path/conf/acl.auth.php" ]; then
-	cp ../conf/acl.auth.php $final_path/conf
+	ynh_add_config --template="../conf/acl.auth.php" --destination="$final_path/conf/acl.auth.php"
 fi
 
 # For securing DokuWiki installation, create default files that will be writable in the "conf" folder.
@@ -145,18 +156,12 @@ if [ ! -f "$final_path/inc/preload.php" ]; then
 fi
 
 #=================================================
-# BACKUP BEFORE UPGRADE THEN ACTIVE TRAP
+# CREATE DEDICATED USER
 #=================================================
-ynh_script_progression --message="Backing up the app before upgrading (may take a while)..." --weight=9
+ynh_script_progression --message="Making sure dedicated system user exists..." --weight=1
 
-# Backup the current version of the app
-ynh_backup_before_upgrade
-ynh_clean_setup () {
-	# restore it if the upgrade fails
-	ynh_restore_upgradebackup
-}
-# Exit if an error occurs during the execution of the script
-ynh_abort_if_errors
+# Create a system user
+ynh_system_user_create --username=$app --home_dir="$final_path"
 
 #=================================================
 # STANDARD UPGRADE STEPS
@@ -172,6 +177,10 @@ then
 	ynh_setup_source --dest_dir="$final_path"
 fi
 
+chmod 750 "$final_path"
+chmod -R o-rwx "$final_path"
+chown -R $app:www-data "$final_path"
+
 #=================================================
 # NGINX CONFIGURATION
 #=================================================
@@ -181,20 +190,19 @@ ynh_script_progression --message="Upgrading NGINX web server configuration..." -
 ynh_add_nginx_config
 
 #=================================================
-# CREATE DEDICATED USER
+# UPGRADE DEPENDENCIES
 #=================================================
-ynh_script_progression --message="Making sure dedicated system user exists..."
+ynh_script_progression --message="Upgrading dependencies..." --weight=1
 
-# Create a system user
-ynh_system_user_create --username=$app
+ynh_install_app_dependencies $pkg_dependencies
 
 #=================================================
 # PHP-FPM CONFIGURATION
 #=================================================
-ynh_script_progression --message="Upgrading PHP-FPM configuration..."
+ynh_script_progression --message="Upgrading PHP-FPM configuration..." --weight=1
 
 # Create a dedicated PHP-FPM config
-ynh_add_fpm_config --package="$extra_php_dependencies"
+ynh_add_fpm_config
 
 #=================================================
 # SPECIFIC UPGRADE
@@ -291,48 +299,48 @@ ynh_script_progression --message="Upgrading logautherror plugin for Fail2Ban..."
 
 ynh_setup_source --dest_dir="$final_path/lib/plugins/logautherror" --source_id=logautherror
 
-#=================================================
-# GENERIC FINALIZATION
-#=================================================
-# SECURE FILES AND DIRECTORIES
-#=================================================
+# #=================================================
+# # GENERIC FINALIZATION
+# #=================================================
+# # SECURE FILES AND DIRECTORIES
+# #=================================================
 
-# Try to use "least privilege" to grant minimal access
-# For details, see https://www.dokuwiki.org/install:permissions
+# # Try to use "least privilege" to grant minimal access
+# # For details, see https://www.dokuwiki.org/install:permissions
 
-# Files owned by DokuWiki can just read
-chown -R root: $final_path
+# # Files owned by DokuWiki can just read
+# chown -R root: $final_path
 
-# DokuWiki needs to write inside these folders. Make "DokuWiki" owner
-chown $app:root $final_path/{conf,inc}
+# # DokuWiki needs to write inside these folders. Make "DokuWiki" owner
+# chown $app:root $final_path/{conf,inc}
 
-# Make "DokuWiki" owner of configuration files that must be writable
-chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
+# # Make "DokuWiki" owner of configuration files that must be writable
+# chown $app:root $final_path/conf/{local.php,local.php.bak,users.auth.php,acl.auth.php,plugins.local.php,plugins.local.php.bak}
 
-# Usefull for some plugins like https://www.dokuwiki.org/plugin:siteexport
-# See https://www.dokuwiki.org/devel:preload
-chown $app:root $final_path/inc/preload.php
+# # Usefull for some plugins like https://www.dokuwiki.org/plugin:siteexport
+# # See https://www.dokuwiki.org/devel:preload
+# chown $app:root $final_path/inc/preload.php
 
-# Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
-# There are only files in the folder and there are no sublevels. No need to use "find"
-chmod -R a+r $final_path/{conf,inc}
+# # Grant read-only to all files as files copied above are owned by root by defaut and nginx cannot read them
+# # There are only files in the folder and there are no sublevels. No need to use "find"
+# chmod -R a+r $final_path/{conf,inc}
 
-# Give write access to "data" and subfolders
-chown -R $app:root $final_path/data
-# Remove access to "other"
-chmod -R o-rwx $final_path/data
+# # Give write access to "data" and subfolders
+# chown -R $app:root $final_path/data
+# # Remove access to "other"
+# chmod -R o-rwx $final_path/data
 
-# Allow the web admin panel to run, aka "Extension Manager"
-chown -R $app:root $final_path/lib/plugins
-# Allow to install templates
-chown -R $app:root $final_path/lib/tpl
+# # Allow the web admin panel to run, aka "Extension Manager"
+# chown -R $app:root $final_path/lib/plugins
+# # Allow to install templates
+# chown -R $app:root $final_path/lib/tpl
 
-# Allow access to public assets like style sheets
-find $final_path/lib -type f -print0 | xargs -0 chmod 0644
-find $final_path/lib -type d -print0 | xargs -0 chmod 0755
-# Using "find" instead of "chmod -R 755" so files does not become executable too
-# chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
-# find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
+# # Allow access to public assets like style sheets
+# find $final_path/lib -type f -print0 | xargs -0 chmod 0644
+# find $final_path/lib -type d -print0 | xargs -0 chmod 0755
+# # Using "find" instead of "chmod -R 755" so files does not become executable too
+# # chmod :   -rwxr-xr-x  1 root root  241 May  3 08:36 index.html   => BAD
+# # find  :   -rw-r--r--  1 1001 1002  241 May  3 08:36 index.html   => GOOD
 
 #=================================================
 # SETUP FAIL2BAN
