@@ -22,6 +22,9 @@ final_path=$(ynh_app_setting_get --app=$app --key=final_path)
 phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
 language=$(ynh_app_setting_get --app=$app --key=language)
 
+fpm_footprint=$(ynh_app_setting_get --app=$app --key=fpm_footprint)
+fpm_usage=$(ynh_app_setting_get --app=$app --key=fpm_usage)
+
 #=================================================
 # CHECK VERSION
 #=================================================
@@ -57,6 +60,18 @@ fi
 if [ -z "$language" ]; then
 	language='en'
 	ynh_app_setting_set --app=$app --key=language --value=$language
+fi
+
+# If fpm_footprint doesn't exist, create it
+if [ -z "$fpm_footprint" ]; then
+    fpm_footprint=low
+    ynh_app_setting_set --app=$app --key=fpm_footprint --value=$fpm_footprint
+fi
+
+# If fpm_usage doesn't exist, create it
+if [ -z "$fpm_usage" ]; then
+    fpm_usage=low
+    ynh_app_setting_set --app=$app --key=fpm_usage --value=$fpm_usage
 fi
 
 # Cleaning legacy permissions
@@ -202,7 +217,7 @@ ynh_install_app_dependencies $pkg_dependencies
 ynh_script_progression --message="Upgrading PHP-FPM configuration..." --weight=1
 
 # Create a dedicated PHP-FPM config
-ynh_add_fpm_config
+ynh_add_fpm_config --phpversion=$phpversion --usage=$fpm_usage --footprint=$fpm_footprint
 
 #=================================================
 # SPECIFIC UPGRADE
